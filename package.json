@@ -1,0 +1,35 @@
+{
+  "name": "trading212-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Trading 212 API integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "trading212-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsx src/index.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "trading212",
+    "trading",
+    "api",
+    "stocks",
+    "investment"
+  ],
+  "author": "Ender Ekici",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
