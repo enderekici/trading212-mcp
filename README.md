@@ -147,13 +147,99 @@ NODE_ENV=development
 
 ## Usage with Claude Desktop
 
-### Configure Claude Desktop
+### Setup Options
 
-Add this server to your Claude Desktop configuration file:
+There are three ways to use the MCP server with Claude Desktop:
 
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+#### Option 1: Docker (Recommended)
 
-**Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+Run the MCP server in a Docker container for isolation and consistency.
+
+**Step 1:** Pull or build the Docker image
+
+```bash
+# Option A: Pull pre-built image (when available)
+docker pull ghcr.io/enderekici/trading212-mcp:latest
+
+# Option B: Build locally
+git clone https://github.com/enderekici/trading212-mcp.git
+cd trading212-mcp
+docker build -t trading212-mcp:latest .
+```
+
+**Step 2:** Configure Claude Desktop
+
+Edit your Claude Desktop configuration file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--name", "trading212-mcp-claude",
+        "-e", "TRADING212_API_KEY=your_api_key_here",
+        "-e", "TRADING212_ENVIRONMENT=demo",
+        "trading212-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+**Step 3:** Restart Claude Desktop
+
+---
+
+#### Option 2: Global npm Installation
+
+Install the MCP server globally and run it directly.
+
+**Step 1:** Install globally
+
+```bash
+npm install -g trading212-mcp
+```
+
+**Step 2:** Configure Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+**Step 3:** Restart Claude Desktop
+
+---
+
+#### Option 3: Local Build (Development)
+
+Build from source and reference the local installation.
+
+**Step 1:** Clone and build
+
+```bash
+git clone https://github.com/enderekici/trading212-mcp.git
+cd trading212-mcp
+npm install
+npm run build
+```
+
+**Step 2:** Configure Claude Desktop
 
 ```json
 {
@@ -163,18 +249,26 @@ Add this server to your Claude Desktop configuration file:
       "args": ["/absolute/path/to/trading212-mcp/dist/index.js"],
       "env": {
         "TRADING212_API_KEY": "your_api_key_here",
-        "TRADING212_ENVIRONMENT": "demo",
-        "LOG_LEVEL": "info",
-        "NODE_ENV": "development"
+        "TRADING212_ENVIRONMENT": "demo"
       }
     }
   }
 }
 ```
 
-### Restart Claude Desktop
+**Step 3:** Restart Claude Desktop
 
-After updating the configuration, restart Claude Desktop to load the MCP server.
+---
+
+### Comparison
+
+| Method | Pros | Cons | Best For |
+|--------|------|------|----------|
+| **Docker** | Isolated, consistent, no Node.js needed | Slightly slower startup (~2s) | Production, teams |
+| **Global npm** | Fast, simple | Requires Node.js installed | Development |
+| **Local build** | Full control, fastest for dev | Manual updates | Contributors |
+
+See [DOCKER.md](./DOCKER.md) for advanced Docker deployment options including persistent containers.
 
 ## Available Tools
 

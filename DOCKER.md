@@ -356,13 +356,25 @@ The Dockerfile uses multi-stage builds to:
 
 ## Integration with Claude Desktop
 
-To use the Dockerized MCP server with Claude Desktop, you can:
+There are three ways to use the MCP server with Claude Desktop:
 
-1. **Use Docker exec** to interact with the running container
-2. **Mount socket** for stdio communication (advanced)
-3. **Run locally** for development, Docker for production
+### Option 1: Run MCP Server via Docker (Recommended)
 
-Example Claude Desktop config for local development:
+This method runs the MCP server inside a Docker container and connects Claude Desktop to it.
+
+**Step 1: Pull or build the image**
+
+```bash
+# Option A: Pull pre-built image (when available)
+docker pull ghcr.io/enderekici/trading212-mcp:latest
+
+# Option B: Build locally
+docker build -t trading212-mcp:latest .
+```
+
+**Step 2: Configure Claude Desktop**
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%/Claude/claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -370,18 +382,289 @@ Example Claude Desktop config for local development:
     "trading212": {
       "command": "docker",
       "args": [
-        "exec", "-i",
+        "run",
+        "--rm",
+        "-i",
+        "--name", "trading212-mcp-claude",
+        "-e", "TRADING212_API_KEY=your_api_key_here",
+        "-e", "TRADING212_ENVIRONMENT=demo",
+        "trading212-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+**How it works:**
+- Claude Desktop runs `docker run` which starts a fresh container
+- The `-i` flag enables interactive mode for stdio communication
+- The `--rm` flag automatically removes the container when Claude closes
+- Each time Claude Desktop starts, a new container is created
+
+**Pros:**
+- ✅ Isolated environment
+- ✅ No local Node.js required
+- ✅ Consistent across machines
+- ✅ Easy updates (pull new image)
+
+**Cons:**
+- ⚠️ Slightly slower startup (~1-2 seconds)
+- ⚠️ Requires Docker running
+
+---
+
+### Option 2: Docker Compose with Named Container
+
+For longer-running sessions, use a persistent container.
+
+**Step 1: Start container with docker-compose**
+
+```bash
+docker-compose up -d
+```
+
+**Step 2: Configure Claude Desktop**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
         "trading212-mcp",
-        "node", "/app/dist/index.js"
-      ],
+        "node",
+        "/app/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+**How it works:**
+- Container runs continuously in the background
+- Claude Desktop connects via `docker exec`
+- API key is set in `.env` or `docker-compose.yml`
+
+**Pros:**
+- ✅ Fast startup (no container creation)
+- ✅ Container runs continuously
+- ✅ Easier debugging (persistent logs)
+
+**Cons:**
+- ⚠️ Must manually start/stop container
+- ⚠️ Container consumes resources even when idle
+
+---
+
+### Option 3: Local Installation (No Docker)
+
+Run the MCP server directly without Docker.
+
+**Step 1: Install globally**
+
+```bash
+npm install -g trading212-mcp
+```
+
+**Step 2: Configure Claude Desktop**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
       "env": {
-        "TRADING212_API_KEY": "your_key",
+        "TRADING212_API_KEY": "your_api_key_here",
         "TRADING212_ENVIRONMENT": "demo"
       }
     }
   }
 }
 ```
+
+**Or use npx (no global install):**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "npx",
+      "args": ["-y", "trading212-mcp"],
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+**Pros:**
+- ✅ Fastest startup
+- ✅ No Docker overhead
+- ✅ Simplest setup
+
+**Cons:**
+- ⚠️ Requires Node.js installed
+- ⚠️ Less isolated
+
+---
+
+### Comparison Table
+
+| Method | Startup Time | Resource Usage | Isolation | Requires |
+|--------|--------------|----------------|-----------|----------|
+| **Docker run** | ~2s | Low | ✅ High | Docker |
+| **Docker exec** | ~0.5s | Medium | ✅ High | Docker + compose |
+| **Local (global)** | ~0.3s | Low | ⚠️ None | Node.js |
+| **Local (npx)** | ~1s | Low | ⚠️ None | Node.js |
+
+---
+
+### Recommended Setup
+
+**For Development:**
+- Use **Option 3** (Local installation) - Fastest iteration
+
+**For Production/Team:**
+- Use **Option 1** (Docker run) - Consistent environment
+
+**For Always-On:**
+- Use **Option 2** (Docker exec) - Persistent container
+
+---
+
+### Troubleshooting Claude Desktop + Docker
+
+#### Issue: "Container not found"
+
+If using Option 2 (docker exec), ensure container is running:
+
+```bash
+docker ps | grep trading212-mcp
+```
+
+Start it if needed:
+
+```bash
+docker-compose up -d
+```
+
+#### Issue: "Command not found: docker"
+
+Docker is not in Claude Desktop's PATH. Use absolute path:
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "/usr/local/bin/docker",
+      "args": ["run", "--rm", "-i", ...]
+    }
+  }
+}
+```
+
+Find Docker path:
+```bash
+which docker
+```
+
+#### Issue: Slow startup
+
+Use Option 2 (persistent container) or Option 3 (local install).
+
+#### Issue: API key not working
+
+Verify environment variable in container:
+
+```bash
+docker exec trading212-mcp env | grep TRADING212
+```
+
+Check logs:
+
+```bash
+docker logs trading212-mcp
+```
+
+---
+
+### Complete Example: Production Setup
+
+**1. Create `docker-compose.yml`:**
+
+```yaml
+version: '3.8'
+
+services:
+  trading212-mcp:
+    build: .
+    container_name: trading212-mcp
+    environment:
+      - TRADING212_API_KEY=${TRADING212_API_KEY}
+      - TRADING212_ENVIRONMENT=${TRADING212_ENVIRONMENT:-demo}
+    restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 256m
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+```
+
+**2. Create `.env`:**
+
+```bash
+TRADING212_API_KEY=your_actual_api_key_here
+TRADING212_ENVIRONMENT=demo
+```
+
+**3. Start container:**
+
+```bash
+docker-compose up -d
+```
+
+**4. Configure Claude Desktop:**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "trading212-mcp",
+        "node",
+        "/app/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+**5. Verify:**
+
+```bash
+# Check container is running
+docker ps
+
+# Check logs
+docker logs trading212-mcp
+
+# Test from command line
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | \
+  docker exec -i trading212-mcp node /app/dist/index.js
+```
+
+**6. Restart Claude Desktop**
+
+The MCP server should now appear in Claude's available tools!
 
 ## Monitoring
 
