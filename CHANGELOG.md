@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Docker Support
+- Production-ready Dockerfile with multi-stage build
+- Docker Compose configuration for easy orchestration
+- Security hardening (non-root user, read-only filesystem)
+- Health checks for container monitoring
+- Resource limits (1GB memory, 1 CPU)
+- Comprehensive Docker deployment guide (DOCKER.md)
+- `.dockerignore` for optimized builds
+- Container image size: ~249MB (Alpine Linux based)
+
 ## [1.0.0] - 2026-02-10
 
 ### Added

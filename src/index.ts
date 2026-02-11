@@ -4,26 +4,32 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  Tool,
+  type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { Trading212Client } from './client.js';
 import {
-  MarketOrderRequestSchema,
-  LimitOrderRequestSchema,
-  StopOrderRequestSchema,
-  StopLimitOrderRequestSchema,
+  type CreatePieRequest,
   CreatePieRequestSchema,
   ExportRequestSchema,
+  LimitOrderRequestSchema,
+  MarketOrderRequestSchema,
+  StopLimitOrderRequestSchema,
+  StopOrderRequestSchema,
 } from './types.js';
-import { z } from 'zod';
+import { AuthError, ValidationError, serializeError } from './utils/errors.js';
+import logger from './utils/logger.js';
 
 // Configuration from environment variables
 const API_KEY = process.env.TRADING212_API_KEY;
 const ENVIRONMENT = (process.env.TRADING212_ENVIRONMENT || 'demo') as 'demo' | 'live';
 
 if (!API_KEY) {
-  console.error('Error: TRADING212_API_KEY environment variable is required');
-  process.exit(1);
+  logger.error({
+    msg: 'Missing API key',
+    error: 'TRADING212_API_KEY environment variable is required',
+  });
+  throw AuthError.missingApiKey();
 }
 
 // Initialize Trading 212 client
@@ -42,7 +48,7 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 // Define all available tools
@@ -58,7 +64,8 @@ const tools: Tool[] = [
   },
   {
     name: 'get_account_cash',
-    description: 'Get detailed cash balance information including free, invested, blocked, and total amounts',
+    description:
+      'Get detailed cash balance information including free, invested, blocked, and total amounts',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -66,7 +73,8 @@ const tools: Tool[] = [
   },
   {
     name: 'get_account_summary',
-    description: 'Get comprehensive account summary with cash, invested amounts, profit/loss, and available funds',
+    description:
+      'Get comprehensive account summary with cash, invested amounts, profit/loss, and available funds',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -76,7 +84,8 @@ const tools: Tool[] = [
   // Portfolio/Positions Tools
   {
     name: 'get_portfolio',
-    description: 'List all open positions in the portfolio with current prices, quantities, and profit/loss',
+    description:
+      'List all open positions in the portfolio with current prices, quantities, and profit/loss',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -216,7 +225,8 @@ const tools: Tool[] = [
   },
   {
     name: 'place_stop_limit_order',
-    description: 'Place a stop-limit order that becomes a limit order when the stop price is reached',
+    description:
+      'Place a stop-limit order that becomes a limit order when the stop price is reached',
     inputSchema: {
       type: 'object',
       properties: {
@@ -250,7 +260,8 @@ const tools: Tool[] = [
   // Instruments & Market Data Tools
   {
     name: 'get_instruments',
-    description: 'List all tradeable instruments with metadata including ISIN, currency, type, and trading schedules',
+    description:
+      'List all tradeable instruments with metadata including ISIN, currency, type, and trading schedules',
     inputSchema: {
       type: 'object',
       properties: {
@@ -273,7 +284,8 @@ const tools: Tool[] = [
   // Pies Tools
   {
     name: 'get_pies',
-    description: 'List all investment pies (portfolio buckets) with their configurations and holdings',
+    description:
+      'List all investment pies (portfolio buckets) with their configurations and holdings',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -309,7 +321,8 @@ const tools: Tool[] = [
         },
         instrumentShares: {
           type: 'object',
-          description: 'Object mapping ticker symbols to their percentage allocation (e.g., {"AAPL": 0.5, "GOOGL": 0.5})',
+          description:
+            'Object mapping ticker symbols to their percentage allocation (e.g., {"AAPL": 0.5, "GOOGL": 0.5})',
           additionalProperties: { type: 'number' },
         },
         dividendCashAction: {
@@ -421,7 +434,8 @@ const tools: Tool[] = [
   },
   {
     name: 'get_transactions',
-    description: 'Get transaction history including deposits, withdrawals, orders, dividends, and fees',
+    description:
+      'Get transaction history including deposits, withdrawals, orders, dividends, and fees',
     inputSchema: {
       type: 'object',
       properties: {
@@ -653,7 +667,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               i.ticker.toLowerCase().includes(searchLower) ||
               i.name.toLowerCase().includes(searchLower) ||
               i.shortName.toLowerCase().includes(searchLower) ||
-              i.isin.toLowerCase().includes(searchLower)
+              i.isin.toLowerCase().includes(searchLower),
           );
         }
 
@@ -719,7 +733,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'update_pie': {
-        const { pieId, ...updateData } = args as any;
+        const { pieId, ...updateData } = args as { pieId: number } & Partial<CreatePieRequest>;
         const pie = await client.updatePie(pieId, updateData);
         return {
           content: [
@@ -800,7 +814,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           includeInterest = true,
           includeOrders = true,
           includeTransactions = true,
-        } = args as any;
+        } = args as {
+          timeFrom: string;
+          timeTo: string;
+          includeDividends?: boolean;
+          includeInterest?: boolean;
+          includeOrders?: boolean;
+          includeTransactions?: boolean;
+        };
 
         const validated = ExportRequestSchema.parse({
           timeFrom,
@@ -825,6 +846,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       default:
+        logger.warn({ msg: 'Unknown tool requested', tool: name });
         return {
           content: [
             {
@@ -836,6 +858,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
     }
   } catch (error) {
+    // Log error with structured data
+    logger.error({
+      msg: 'Tool execution failed',
+      tool: name,
+      args,
+      error: serializeError(error),
+    });
+
+    // Handle validation errors specially
+    if (error instanceof z.ZodError) {
+      const validationError = ValidationError.fromZodError(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Validation Error: ${validationError.message}\n${JSON.stringify(validationError.issues, null, 2)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       content: [
@@ -851,12 +895,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start the server
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error(`Trading 212 MCP server running on ${ENVIRONMENT} environment`);
+  try {
+    logger.info({
+      msg: 'Starting Trading 212 MCP server',
+      environment: ENVIRONMENT,
+      version: '1.0.0',
+      nodeVersion: process.version,
+      platform: process.platform,
+      logLevel: logger.level,
+    });
+
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+
+    logger.info({
+      msg: 'Trading 212 MCP server started successfully',
+      environment: ENVIRONMENT,
+    });
+  } catch (error) {
+    logger.fatal({
+      msg: 'Failed to start server',
+      error: serializeError(error),
+    });
+    throw error;
+  }
 }
 
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  logger.fatal({
+    msg: 'Fatal error in main',
+    error: serializeError(error),
+  });
   process.exit(1);
 });

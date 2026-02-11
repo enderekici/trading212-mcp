@@ -1,37 +1,39 @@
-import {
-  Trading212Config,
-  Environment,
-  AccountInfo,
-  AccountInfoSchema,
-  AccountCash,
-  AccountCashSchema,
-  AccountSummary,
-  AccountSummarySchema,
-  Instrument,
-  InstrumentSchema,
-  Exchange,
-  ExchangeSchema,
-  Position,
-  PositionSchema,
-  Order,
-  OrderSchema,
-  MarketOrderRequest,
-  LimitOrderRequest,
-  StopOrderRequest,
-  StopLimitOrderRequest,
-  Pie,
-  PieSchema,
-  CreatePieRequest,
-  HistoricalOrder,
-  HistoricalOrderSchema,
-  Dividend,
-  DividendSchema,
-  Transaction,
-  TransactionSchema,
-  ExportRequest,
-  RateLimitInfo,
-} from './types.js';
 import { z } from 'zod';
+import {
+  type AccountCash,
+  AccountCashSchema,
+  type AccountInfo,
+  AccountInfoSchema,
+  type AccountSummary,
+  AccountSummarySchema,
+  type CreatePieRequest,
+  type Dividend,
+  DividendSchema,
+  type Environment,
+  type Exchange,
+  ExchangeSchema,
+  type ExportRequest,
+  type HistoricalOrder,
+  HistoricalOrderSchema,
+  type Instrument,
+  InstrumentSchema,
+  type LimitOrderRequest,
+  type MarketOrderRequest,
+  type Order,
+  OrderSchema,
+  type Pie,
+  PieSchema,
+  type Position,
+  PositionSchema,
+  type RateLimitInfo,
+  type StopLimitOrderRequest,
+  type StopOrderRequest,
+  type Trading212Config,
+  type Transaction,
+  TransactionSchema,
+} from './types.js';
+import { ApiError, AuthError, RateLimitError } from './utils/errors.js';
+import logger from './utils/logger.js';
 
 export class Trading212Client {
   private baseUrl: string;
@@ -52,7 +54,7 @@ export class Trading212Client {
   private getAuthHeaders(): Record<string, string> {
     const credentials = Buffer.from(`${this.apiKey}:`).toString('base64');
     return {
-      'Authorization': `Basic ${credentials}`,
+      Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/json',
     };
   }
@@ -69,18 +71,18 @@ export class Trading212Client {
     }
 
     return {
-      limit: parseInt(limit, 10),
-      period: parseInt(period, 10),
-      remaining: parseInt(remaining, 10),
-      reset: parseInt(reset, 10),
-      used: parseInt(used, 10),
+      limit: Number.parseInt(limit, 10),
+      period: Number.parseInt(period, 10),
+      remaining: Number.parseInt(remaining, 10),
+      reset: Number.parseInt(reset, 10),
+      used: Number.parseInt(used, 10),
     };
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    schema?: z.ZodSchema<T>
+    schema?: z.ZodSchema<T>,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
@@ -167,7 +169,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(order),
       },
-      OrderSchema
+      OrderSchema,
     );
   }
 
@@ -178,7 +180,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(order),
       },
-      OrderSchema
+      OrderSchema,
     );
   }
 
@@ -189,7 +191,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(order),
       },
-      OrderSchema
+      OrderSchema,
     );
   }
 
@@ -200,7 +202,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(order),
       },
-      OrderSchema
+      OrderSchema,
     );
   }
 
@@ -229,7 +231,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(pie),
       },
-      PieSchema
+      PieSchema,
     );
   }
 
@@ -240,7 +242,7 @@ export class Trading212Client {
         method: 'POST',
         body: JSON.stringify(pie),
       },
-      PieSchema
+      PieSchema,
     );
   }
 
@@ -261,7 +263,7 @@ export class Trading212Client {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.ticker) queryParams.append('ticker', params.ticker);
 
-    const endpoint = `/equity/history/orders${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const endpoint = `/equity/history/orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ items: unknown[]; nextPagePath?: string }>(endpoint);
 
     return {
@@ -280,7 +282,7 @@ export class Trading212Client {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.ticker) queryParams.append('ticker', params.ticker);
 
-    const endpoint = `/history/dividends${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const endpoint = `/history/dividends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ items: unknown[]; nextPagePath?: string }>(endpoint);
 
     return {
@@ -297,7 +299,7 @@ export class Trading212Client {
     if (params?.cursor) queryParams.append('cursor', params.cursor.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
-    const endpoint = `/history/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const endpoint = `/history/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ items: unknown[]; nextPagePath?: string }>(endpoint);
 
     return {

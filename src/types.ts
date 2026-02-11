@@ -52,13 +52,17 @@ export const InstrumentSchema = z.object({
 export const ExchangeSchema = z.object({
   id: z.number(),
   name: z.string(),
-  workingSchedules: z.array(z.object({
-    id: z.number(),
-    timeEvents: z.array(z.object({
-      date: z.string(),
-      type: z.string(),
-    })),
-  })),
+  workingSchedules: z.array(
+    z.object({
+      id: z.number(),
+      timeEvents: z.array(
+        z.object({
+          date: z.string(),
+          type: z.string(),
+        }),
+      ),
+    }),
+  ),
 });
 
 // Position schemas
@@ -78,7 +82,16 @@ export const PositionSchema = z.object({
 // Order schemas
 export const OrderTypeSchema = z.enum(['MARKET', 'LIMIT', 'STOP', 'STOP_LIMIT']);
 export const OrderSideSchema = z.enum(['BUY', 'SELL']);
-export const OrderStatusSchema = z.enum(['NEW', 'PROCESSING', 'CONFIRMED', 'PENDING', 'LOCAL', 'REPLACED', 'CANCELLED', 'REJECTED']);
+export const OrderStatusSchema = z.enum([
+  'NEW',
+  'PROCESSING',
+  'CONFIRMED',
+  'PENDING',
+  'LOCAL',
+  'REPLACED',
+  'CANCELLED',
+  'REJECTED',
+]);
 export const TimeInForceSchema = z.enum(['DAY', 'GTC']);
 
 export const OrderSchema = z.object({

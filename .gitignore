@@ -4,3 +4,10 @@ dist/
 .env
 .DS_Store
 *.tsbuildinfo
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vitest
+.vitest/

@@ -1,6 +1,16 @@
 # Trading 212 MCP Server
 
+![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)
+![Node.js](https://img.shields.io/badge/node-%3E%3D18-green?logo=node.js)
+![TypeScript](https://img.shields.io/badge/typescript-5.7-blue?logo=typescript)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A comprehensive Model Context Protocol (MCP) server for seamless integration with the Trading 212 API. This server enables AI assistants like Claude to interact with your Trading 212 investment account, providing full access to account management, portfolio tracking, order execution, and historical data analysis.
+
+**Deployment Options:**
+- Local installation with Node.js
+- Docker container (production-ready)
+- Docker Compose for easy orchestration
 
 ## Features
 
@@ -38,11 +48,13 @@ A comprehensive Model Context Protocol (MCP) server for seamless integration wit
 - View complete transaction history
 - Export data to CSV for specified time periods
 
-### ⚡ Performance Features
+### ⚡ Performance & Observability
 - Automatic rate limit tracking and headers
 - Zod schema validation for type safety
-- Comprehensive error handling
+- Comprehensive error handling with custom error classes
+- Production-grade structured logging (Pino)
 - Support for both demo and live environments
+- Debug mode for API request/response inspection
 
 ## Installation
 
@@ -51,15 +63,34 @@ A comprehensive Model Context Protocol (MCP) server for seamless integration wit
 - Trading 212 account (Invest or ISA)
 - Trading 212 API key (see [Setup Guide](#getting-your-api-key))
 
-### Install Dependencies
+### Option 1: Docker (Recommended for Production)
+
+The easiest way to deploy the MCP server is using Docker:
 
 ```bash
-npm install
+# Clone the repository
+git clone https://github.com/enderekici/trading212-mcp.git
+cd trading212-mcp
+
+# Create .env file with your API key
+echo "TRADING212_API_KEY=your_api_key_here" > .env
+echo "TRADING212_ENVIRONMENT=demo" >> .env
+
+# Start with Docker Compose
+docker-compose up -d
 ```
 
-### Build the Project
+See [DOCKER.md](./DOCKER.md) for comprehensive Docker deployment guide.
+
+### Option 2: Local Installation
+
+Install and build from source:
 
 ```bash
+# Install dependencies
+npm install
+
+# Build the project
 npm run build
 ```
 
@@ -90,11 +121,29 @@ TRADING212_API_KEY=your_api_key_here
 
 # Optional: Environment (demo or live), defaults to demo
 TRADING212_ENVIRONMENT=demo
+
+# Optional: Log level (trace, debug, info, warn, error, fatal), defaults to info
+LOG_LEVEL=info
+
+# Optional: Node environment (development or production), defaults to development
+NODE_ENV=development
 ```
 
 **Environments:**
 - `demo` - Paper trading environment (recommended for testing)
 - `live` - Real money trading environment
+
+**Log Levels:**
+- `trace` - Most verbose, logs every detail
+- `debug` - Detailed logs including API requests, rate limits, and debug info
+- `info` - Standard operation logs (default, recommended)
+- `warn` - Only warnings and errors
+- `error` - Only errors
+- `fatal` - Only fatal errors
+
+**Node Environment:**
+- `development` - Pretty-printed colored logs (human-readable)
+- `production` - JSON logs (for structured logging systems)
 
 ## Usage with Claude Desktop
 
@@ -114,7 +163,9 @@ Add this server to your Claude Desktop configuration file:
       "args": ["/absolute/path/to/trading212-mcp/dist/index.js"],
       "env": {
         "TRADING212_API_KEY": "your_api_key_here",
-        "TRADING212_ENVIRONMENT": "demo"
+        "TRADING212_ENVIRONMENT": "demo",
+        "LOG_LEVEL": "info",
+        "NODE_ENV": "development"
       }
     }
   }
@@ -527,6 +578,119 @@ For complete API documentation, visit:
 5. **Use minimal permissions** needed for your use case
 6. **Rotate API keys** regularly
 7. **Monitor API usage** through rate limit headers
+
+## Logging and Debugging
+
+The Trading 212 MCP server includes professional structured logging powered by [Pino](https://getpino.io/), providing production-grade observability and debugging capabilities.
+
+### Log Levels
+
+Control logging verbosity with the `LOG_LEVEL` environment variable:
+
+```bash
+# Development - detailed logs
+LOG_LEVEL=debug npm run dev
+
+# Production - minimal logs
+LOG_LEVEL=warn node dist/index.js
+```
+
+**Available levels** (from most to least verbose):
+- `trace` - Everything including internal details
+- `debug` - API requests, rate limits, detailed operations
+- `info` - Server startup, tool executions (default)
+- `warn` - Warnings and potential issues
+- `error` - Errors only
+- `fatal` - Fatal errors causing shutdown
+
+### Log Output Formats
+
+**Development mode** (pretty-printed, colored):
+```bash
+NODE_ENV=development npm run dev
+```
+Example output:
+```
+[16:32:15.423] INFO: Starting Trading 212 MCP server
+    environment: "demo"
+    version: "1.0.0"
+    nodeVersion: "v20.10.0"
+    platform: "darwin"
+    logLevel: "info"
+```
+
+**Production mode** (structured JSON):
+```bash
+NODE_ENV=production npm start
+```
+Example output:
+```json
+{"level":"info","time":"2026-02-10T16:32:15.423Z","msg":"Starting Trading 212 MCP server","environment":"demo","version":"1.0.0"}
+```
+
+### Debugging API Requests
+
+Enable debug logging to see all API calls and rate limit info:
+
+```bash
+LOG_LEVEL=debug node dist/index.js
+```
+
+Debug logs include:
+- API request method and endpoint
+- Rate limit headers (limit, remaining, reset time)
+- Warnings when approaching rate limits
+- Request/response timing
+- Error details with context
+
+### Error Tracking
+
+The server uses structured error classes for better debugging:
+
+- `AuthError` - API key issues (401)
+- `ApiError` - API request failures (4xx, 5xx)
+- `RateLimitError` - Rate limit exceeded (429)
+- `ValidationError` - Invalid request parameters (400)
+
+All errors are logged with:
+- Error type and code
+- HTTP status code
+- Contextual information
+- Request details
+- Stack traces (in non-production)
+
+### Example Debug Session
+
+```bash
+# Enable detailed logging
+export LOG_LEVEL=debug
+export NODE_ENV=development
+
+# Run the server
+npm run dev
+```
+
+Look for these log entries:
+```
+[DEBUG] API request - Shows every API call
+[DEBUG] Rate limit info - Track API quota usage
+[WARN] Approaching rate limit - Proactive warnings
+[ERROR] Tool execution failed - Detailed error context
+```
+
+### Logging in Claude Desktop
+
+When running through Claude Desktop, logs are written to stderr and can be viewed in:
+
+**macOS**:
+```bash
+tail -f ~/Library/Logs/Claude/mcp*.log
+```
+
+**Windows**:
+```powershell
+Get-Content "$env:APPDATA\Claude\Logs\mcp*.log" -Wait
+```
 
 ## Troubleshooting
 

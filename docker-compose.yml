@@ -1,0 +1,73 @@
+services:
+  trading212-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+
+    container_name: trading212-mcp
+
+    # Environment variables
+    environment:
+      - TRADING212_API_KEY=${TRADING212_API_KEY:?TRADING212_API_KEY environment variable is required}
+      - TRADING212_ENVIRONMENT=${TRADING212_ENVIRONMENT:-demo}
+      - NODE_ENV=production
+
+    # Restart policy for production reliability
+    restart: unless-stopped
+
+    # Resource limits for production stability
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "node", "-e", "import('./dist/index.js').then(() => process.exit(0)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+    # Stdin/stdout configuration for MCP stdio transport
+    stdin_open: true
+    tty: true
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem (app writes to /tmp if needed)
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Optional: Volume for persistent data (if needed in future)
+    # volumes:
+    #   - ./data:/app/data:rw
+
+    # Network configuration (if needed for future HTTP transport)
+    # networks:
+    #   - trading212-network
+
+# Optional: Define custom network
+# networks:
+#   trading212-network:
+#     driver: bridge
+
+# Optional: Define volumes for persistence
+# volumes:
+#   trading212-data:
+#     driver: local
