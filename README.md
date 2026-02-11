@@ -131,7 +131,18 @@ NODE_ENV=development
 
 **Environments:**
 - `demo` - Paper trading environment (recommended for testing)
+  - API Base URL: `https://demo.trading212.com/api/v0`
+  - Uses paper trading account (no real money)
+  - Safe for testing and development
+  - **Default value** if not specified
 - `live` - Real money trading environment
+  - API Base URL: `https://live.trading212.com/api/v0`
+  - Uses real money trading account
+  - **Use with caution**
+
+⚠️ **Important:** Your API key is environment-specific. A demo API key only works with `TRADING212_ENVIRONMENT=demo`, and a live API key only works with `TRADING212_ENVIRONMENT=live`. You cannot mix them.
+
+📖 **For detailed information about environments, see [ENVIRONMENTS.md](./ENVIRONMENTS.md)**
 
 **Log Levels:**
 - `trace` - Most verbose, logs every detail

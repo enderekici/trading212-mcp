@@ -89,9 +89,27 @@ docker-compose up -d
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TRADING212_API_KEY` | Yes | - | Your Trading 212 API key |
-| `TRADING212_ENVIRONMENT` | No | `demo` | Environment: `demo` or `live` |
+| `TRADING212_API_KEY` | Yes | - | Your Trading 212 API key (environment-specific) |
+| `TRADING212_ENVIRONMENT` | No | `demo` | Environment: `demo` (paper trading) or `live` (real money) |
 | `NODE_ENV` | No | `production` | Node environment |
+
+**Environment Details:**
+
+**`TRADING212_ENVIRONMENT=demo`** (Default)
+- **API Base URL**: `https://demo.trading212.com/api/v0`
+- **Trading Mode**: Paper trading (simulated, no real money)
+- **API Key**: Must be generated from demo account
+- **Use Case**: Testing, development, learning
+- **Safe**: Yes, cannot lose real money
+
+**`TRADING212_ENVIRONMENT=live`**
+- **API Base URL**: `https://live.trading212.com/api/v0`
+- **Trading Mode**: Real money trading
+- **API Key**: Must be generated from live/ISA account
+- **Use Case**: Production trading
+- **Safe**: No, uses real funds
+
+⚠️ **Important:** API keys are environment-specific. A demo API key will not work with `live` environment, and a live API key will not work with `demo` environment. Make sure your API key matches the environment you're using.
 
 ### Resource Limits
 

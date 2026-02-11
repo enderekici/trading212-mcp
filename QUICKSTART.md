@@ -18,6 +18,12 @@ Choose your preferred setup method: **Docker** (easiest), **npm install** (faste
    - ✅ Portfolio (read)
 5. Copy your API key
 
+⚠️ **Note on Environments:**
+- Your API key is tied to **either** a demo account **or** a live account
+- **Demo API key** → Use with `TRADING212_ENVIRONMENT=demo` (paper trading, no real money)
+- **Live API key** → Use with `TRADING212_ENVIRONMENT=live` (real money trading)
+- You cannot use a demo key with live environment or vice versa
+
 ---
 
 ## Step 2: Choose Your Setup Method
