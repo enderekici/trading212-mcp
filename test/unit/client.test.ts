@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Trading212Client } from '../../src/client.js';
-import type { Trading212Config } from '../../src/types.js';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -91,7 +90,7 @@ describe('Trading212Client', () => {
 
       const fetchCall = (global.fetch as any).mock.calls[0];
       const headers = fetchCall[1].headers;
-      expect(headers['Authorization']).toContain('Basic');
+      expect(headers.Authorization).toContain('Basic');
       expect(headers['Content-Type']).toBe('application/json');
     });
 
@@ -209,8 +208,8 @@ describe('Trading212Client', () => {
 
     it('should get account cash', async () => {
       const mockResponse = {
-        free: 1000.50,
-        total: 5000.00,
+        free: 1000.5,
+        total: 5000.0,
         ppl: 500.25,
       };
 
@@ -226,10 +225,10 @@ describe('Trading212Client', () => {
 
     it('should get account summary', async () => {
       const mockResponse = {
-        cash: { free: 1000.50, total: 5000.00 },
-        invested: 3500.00,
+        cash: { free: 1000.5, total: 5000.0 },
+        invested: 3500.0,
         ppl: 500.25,
-        pieCash: 100.00,
+        pieCash: 100.0,
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -248,8 +247,8 @@ describe('Trading212Client', () => {
       const mockResponse = [
         {
           averagePrice: 150.25,
-          currentPrice: 155.50,
-          ppl: 52.50,
+          currentPrice: 155.5,
+          ppl: 52.5,
           quantity: 10,
           ticker: 'AAPL',
         },
@@ -269,8 +268,8 @@ describe('Trading212Client', () => {
     it('should get specific position', async () => {
       const mockResponse = {
         averagePrice: 150.25,
-        currentPrice: 155.50,
-        ppl: 52.50,
+        currentPrice: 155.5,
+        ppl: 52.5,
         quantity: 10,
         ticker: 'AAPL',
       };
@@ -293,7 +292,7 @@ describe('Trading212Client', () => {
         {
           createdOn: '2024-01-01T00:00:00Z',
           filledQuantity: 5,
-          filledValue: 750.00,
+          filledValue: 750.0,
           id: 123456,
           quantity: 10,
           side: 'BUY',
@@ -318,7 +317,7 @@ describe('Trading212Client', () => {
       const mockResponse = {
         createdOn: '2024-01-01T00:00:00Z',
         filledQuantity: 5,
-        filledValue: 750.00,
+        filledValue: 750.0,
         id: 123456,
         quantity: 10,
         side: 'BUY',
@@ -389,7 +388,7 @@ describe('Trading212Client', () => {
 
     it('should place limit order', async () => {
       const orderRequest = {
-        limitPrice: 150.00,
+        limitPrice: 150.0,
         quantity: 10,
         ticker: 'AAPL',
         timeValidity: 'GTC' as const,
@@ -400,7 +399,7 @@ describe('Trading212Client', () => {
         filledQuantity: 0,
         filledValue: 0,
         id: 123456,
-        limitPrice: 150.00,
+        limitPrice: 150.0,
         quantity: 10,
         side: 'BUY',
         status: 'NEW',
@@ -417,13 +416,13 @@ describe('Trading212Client', () => {
 
       const result = await client.placeLimitOrder(orderRequest);
       expect(result).toEqual(mockResponse);
-      expect(result.limitPrice).toBe(150.00);
+      expect(result.limitPrice).toBe(150.0);
     });
 
     it('should place stop order', async () => {
       const orderRequest = {
         quantity: 10,
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'DAY' as const,
       };
@@ -436,7 +435,7 @@ describe('Trading212Client', () => {
         quantity: 10,
         side: 'SELL',
         status: 'NEW',
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'DAY',
         type: 'STOP',
@@ -450,14 +449,14 @@ describe('Trading212Client', () => {
 
       const result = await client.placeStopOrder(orderRequest);
       expect(result).toEqual(mockResponse);
-      expect(result.stopPrice).toBe(140.00);
+      expect(result.stopPrice).toBe(140.0);
     });
 
     it('should place stop-limit order', async () => {
       const orderRequest = {
-        limitPrice: 145.00,
+        limitPrice: 145.0,
         quantity: 10,
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'GTC' as const,
       };
@@ -467,11 +466,11 @@ describe('Trading212Client', () => {
         filledQuantity: 0,
         filledValue: 0,
         id: 123456,
-        limitPrice: 145.00,
+        limitPrice: 145.0,
         quantity: 10,
         side: 'SELL',
         status: 'NEW',
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'GTC',
         type: 'STOP_LIMIT',
@@ -485,8 +484,8 @@ describe('Trading212Client', () => {
 
       const result = await client.placeStopLimitOrder(orderRequest);
       expect(result).toEqual(mockResponse);
-      expect(result.limitPrice).toBe(145.00);
-      expect(result.stopPrice).toBe(140.00);
+      expect(result.limitPrice).toBe(145.0);
+      expect(result.stopPrice).toBe(140.0);
     });
   });
 
@@ -552,7 +551,7 @@ describe('Trading212Client', () => {
     it('should get all pies', async () => {
       const mockResponse = [
         {
-          cash: 100.00,
+          cash: 100.0,
           dividendCashAction: 'REINVEST',
           icon: 'BRIEFCASE',
           id: 123,
@@ -561,7 +560,7 @@ describe('Trading212Client', () => {
             { expectedShare: 0.5, ticker: 'MSFT' },
           ],
           name: 'Tech Portfolio',
-          result: 50.00,
+          result: 50.0,
           status: 'ACTIVE',
         },
       ];
@@ -578,7 +577,7 @@ describe('Trading212Client', () => {
 
     it('should get specific pie', async () => {
       const mockResponse = {
-        cash: 100.00,
+        cash: 100.0,
         dividendCashAction: 'REINVEST',
         icon: 'BRIEFCASE',
         id: 123,
@@ -587,7 +586,7 @@ describe('Trading212Client', () => {
           { expectedShare: 0.5, ticker: 'MSFT' },
         ],
         name: 'Tech Portfolio',
-        result: 50.00,
+        result: 50.0,
         status: 'ACTIVE',
       };
 
@@ -644,7 +643,7 @@ describe('Trading212Client', () => {
       };
 
       const mockResponse = {
-        cash: 100.00,
+        cash: 100.0,
         dividendCashAction: 'REINVEST',
         icon: 'BRIEFCASE',
         id: 123,
@@ -653,7 +652,7 @@ describe('Trading212Client', () => {
           { expectedShare: 0.5, ticker: 'MSFT' },
         ],
         name: 'Updated Portfolio',
-        result: 50.00,
+        result: 50.0,
         status: 'ACTIVE',
       };
 
@@ -689,19 +688,19 @@ describe('Trading212Client', () => {
         items: [
           {
             dateCreated: '2024-01-01T00:00:00Z',
-            fillCost: 5.00,
+            fillCost: 5.0,
             fillId: 123,
-            fillPrice: 150.00,
-            fillResult: 50.00,
+            fillPrice: 150.0,
+            fillResult: 50.0,
             fillType: 'MARKET',
             filledQuantity: 10,
-            filledValue: 1500.00,
+            filledValue: 1500.0,
             id: 456,
             orderedQuantity: 10,
-            orderedValue: 1500.00,
+            orderedValue: 1500.0,
             status: 'CONFIRMED',
             taxes: {
-              fillTax: 1.50,
+              fillTax: 1.5,
             },
             ticker: 'AAPL',
             timeValidity: 'DAY',
@@ -726,7 +725,7 @@ describe('Trading212Client', () => {
       const mockResponse = {
         items: [
           {
-            amount: 10.50,
+            amount: 10.5,
             amountInEuro: 9.75,
             grossAmountPerShare: 1.05,
             paidOn: '2024-01-01',
@@ -753,7 +752,7 @@ describe('Trading212Client', () => {
       const mockResponse = {
         items: [
           {
-            amount: 1000.00,
+            amount: 1000.0,
             dateTime: '2024-01-01T00:00:00Z',
             reference: 'TXN-123',
             type: 'DEPOSIT',

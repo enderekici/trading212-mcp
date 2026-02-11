@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Trading 212 MCP Server
 # Stage 1: Builder - Compile TypeScript
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -23,7 +23,7 @@ RUN npm run build
 RUN npm prune --production
 
 # Stage 2: Production - Minimal runtime image
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Add labels for better container management
 LABEL maintainer="Ender Ekici"

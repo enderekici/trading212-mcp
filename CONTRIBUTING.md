@@ -47,7 +47,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Prerequisites
 
-- Node.js 18 or higher
+- Node.js 24 or higher
 - npm 9 or higher
 - Trading 212 account with API access
 

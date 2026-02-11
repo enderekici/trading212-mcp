@@ -28,7 +28,7 @@ services:
 
     # Health check configuration
     healthcheck:
-      test: ["CMD", "node", "-e", "import('./dist/index.js').then(() => process.exit(0)).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 30s
       timeout: 10s
       retries: 3

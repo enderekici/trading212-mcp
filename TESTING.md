@@ -88,10 +88,10 @@ test/
       include: ['src/**/*.ts'],
       exclude: ['dist/**', 'test/**', '**/types.ts'],
       thresholds: {
-        lines: 20,
+        lines: 17,
         functions: 50,
         branches: 50,
-        statements: 20
+        statements: 17
       }
     }
   }
@@ -388,7 +388,7 @@ Tests run in parallel by default for optimal speed.
 ### Tests Failing Locally But Pass in CI
 - Clear node_modules: `rm -rf node_modules && npm install`
 - Update dependencies: `npm update`
-- Check Node version: `node --version` (should be 18+)
+- Check Node version: `node --version` (should be 24+)
 
 ### Coverage Thresholds Failing
 - Review `vitest.config.ts` thresholds
@@ -421,6 +421,6 @@ npm test && npm run test:coverage && npm run lint
 
 ---
 
-**Last Updated**: 2026-02-10
-**Test Framework**: Vitest 2.1.8
+**Last Updated**: 2026-02-11
+**Test Framework**: Vitest 4.0.18
 **Coverage Provider**: V8

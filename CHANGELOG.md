@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resource limits (1GB memory, 1 CPU)
 - Comprehensive Docker deployment guide (DOCKER.md)
 - `.dockerignore` for optimized builds
-- Container image size: ~249MB (Alpine Linux based)
+- Container image size: ~260MB (Alpine Linux based)
 
 ## [1.0.0] - 2026-02-10
 
@@ -80,13 +80,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 #### Dependencies
-- `@modelcontextprotocol/sdk` ^1.0.4 - MCP server implementation
-- `zod` ^3.24.1 - Schema validation
+- `@modelcontextprotocol/sdk` ^1.26.0 - MCP server implementation
+- `pino` ^10.3.1 - Structured logging
+- `pino-pretty` ^13.1.3 - Pretty log formatting
+- `zod` ^4.3.6 - Schema validation
 
 #### Development Dependencies
-- `@types/node` ^22.10.2 - Node.js type definitions
-- `tsx` ^4.19.2 - TypeScript execution
-- `typescript` ^5.7.2 - TypeScript compiler
+- `@biomejs/biome` ^2.3.14 - Linter and formatter
+- `@types/node` ^25.2.3 - Node.js type definitions
+- `@vitest/coverage-v8` ^4.0.18 - Coverage provider
+- `@vitest/ui` ^4.0.18 - Interactive test UI
+- `tsup` ^8.5.1 - TypeScript bundler
+- `tsx` ^4.21.0 - TypeScript execution
+- `typescript` ^5.9.3 - TypeScript compiler
+- `vitest` ^4.0.18 - Test framework
 
 #### Architecture
 - Clean separation of concerns (types, client, server)
@@ -124,7 +131,7 @@ Not applicable - this is a server-side MCP implementation.
 - ✅ macOS
 - ✅ Linux
 - ✅ Windows
-- ⚠️ Requires Node.js 18+
+- ⚠️ Requires Node.js 24+
 
 ### Migration Notes
 

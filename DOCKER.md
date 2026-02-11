@@ -357,7 +357,7 @@ docker run --rm \
 
 The Dockerfile uses multi-stage builds to:
 
-- Minimize final image size (~100MB vs ~1GB)
+- Minimize final image size (~260MB vs ~1GB)
 - Include only production dependencies
 - Reduce attack surface
 

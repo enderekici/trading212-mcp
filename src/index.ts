@@ -17,7 +17,7 @@ import {
   StopLimitOrderRequestSchema,
   StopOrderRequestSchema,
 } from './types.js';
-import { AuthError, ValidationError, serializeError } from './utils/errors.js';
+import { AuthError, serializeError, ValidationError } from './utils/errors.js';
 import logger from './utils/logger.js';
 
 // Configuration from environment variables

@@ -615,7 +615,7 @@ npm test
 
 ```bash
 # Enable debug logging
-TRADING212_LOG_LEVEL=debug node dist/index.js
+LOG_LEVEL=debug node dist/index.js
 
 # Test with curl (if REST mode added)
 curl -X POST http://localhost:3000/api/account/info \

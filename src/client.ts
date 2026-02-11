@@ -32,8 +32,6 @@ import {
   type Transaction,
   TransactionSchema,
 } from './types.js';
-import { ApiError, AuthError, RateLimitError } from './utils/errors.js';
-import logger from './utils/logger.js';
 
 export class Trading212Client {
   private baseUrl: string;

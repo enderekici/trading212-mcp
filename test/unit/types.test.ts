@@ -1,27 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  AccountInfoSchema,
   AccountCashSchema,
+  AccountInfoSchema,
   AccountSummarySchema,
-  InstrumentSchema,
+  CreatePieRequestSchema,
+  DividendSchema,
   ExchangeSchema,
-  PositionSchema,
+  ExportRequestSchema,
+  HistoricalOrderSchema,
+  InstrumentSchema,
+  LimitOrderRequestSchema,
+  MarketOrderRequestSchema,
   OrderSchema,
-  OrderTypeSchema,
   OrderSideSchema,
   OrderStatusSchema,
-  TimeInForceSchema,
-  MarketOrderRequestSchema,
-  LimitOrderRequestSchema,
-  StopOrderRequestSchema,
-  StopLimitOrderRequestSchema,
+  OrderTypeSchema,
   PieInstrumentSchema,
   PieSchema,
-  CreatePieRequestSchema,
-  HistoricalOrderSchema,
-  DividendSchema,
+  PositionSchema,
+  StopLimitOrderRequestSchema,
+  StopOrderRequestSchema,
+  TimeInForceSchema,
   TransactionSchema,
-  ExportRequestSchema,
 } from '../../src/types.js';
 
 describe('Account Schemas', () => {
@@ -57,13 +57,13 @@ describe('Account Schemas', () => {
   describe('AccountCashSchema', () => {
     it('should validate valid account cash with all fields', () => {
       const validData = {
-        free: 1000.50,
-        total: 5000.00,
+        free: 1000.5,
+        total: 5000.0,
         ppl: 500.25,
         result: 250.75,
-        invested: 3500.00,
-        pieCash: 100.00,
-        blocked: 50.00,
+        invested: 3500.0,
+        pieCash: 100.0,
+        blocked: 50.0,
       };
       const result = AccountCashSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -71,8 +71,8 @@ describe('Account Schemas', () => {
 
     it('should validate valid account cash with required fields only', () => {
       const validData = {
-        free: 1000.50,
-        total: 5000.00,
+        free: 1000.5,
+        total: 5000.0,
       };
       const result = AccountCashSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -80,7 +80,7 @@ describe('Account Schemas', () => {
 
     it('should reject missing required fields', () => {
       const invalidData = {
-        free: 1000.50,
+        free: 1000.5,
         // missing total
       };
       const result = AccountCashSchema.safeParse(invalidData);
@@ -92,12 +92,12 @@ describe('Account Schemas', () => {
     it('should validate valid account summary', () => {
       const validData = {
         cash: {
-          free: 1000.50,
-          total: 5000.00,
+          free: 1000.5,
+          total: 5000.0,
         },
-        invested: 3500.00,
+        invested: 3500.0,
         ppl: 500.25,
-        pieCash: 100.00,
+        pieCash: 100.0,
       };
       const result = AccountSummarySchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -106,12 +106,12 @@ describe('Account Schemas', () => {
     it('should reject invalid nested cash object', () => {
       const invalidData = {
         cash: {
-          free: 1000.50,
+          free: 1000.5,
           // missing total
         },
-        invested: 3500.00,
+        invested: 3500.0,
         ppl: 500.25,
-        pieCash: 100.00,
+        pieCash: 100.0,
       };
       const result = AccountSummarySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -172,7 +172,7 @@ describe('Instrument Schemas', () => {
 
     it('should accept STOCK, ETF, and FUND types', () => {
       const types = ['STOCK', 'ETF', 'FUND'];
-      types.forEach(type => {
+      types.forEach((type) => {
         const validData = {
           addedOn: '2024-01-01T00:00:00Z',
           currencyCode: 'USD',
@@ -217,8 +217,8 @@ describe('Position Schema', () => {
   it('should validate valid position', () => {
     const validData = {
       averagePrice: 150.25,
-      currentPrice: 155.50,
-      ppl: 52.50,
+      currentPrice: 155.5,
+      ppl: 52.5,
       quantity: 10,
       ticker: 'AAPL',
     };
@@ -229,13 +229,13 @@ describe('Position Schema', () => {
   it('should validate position with all optional fields', () => {
     const validData = {
       averagePrice: 150.25,
-      currentPrice: 155.50,
+      currentPrice: 155.5,
       frontend: 'web',
       initialFillDate: '2024-01-01T00:00:00Z',
       maxBuy: 100,
       maxSell: 10,
       pieQuantity: 5,
-      ppl: 52.50,
+      ppl: 52.5,
       quantity: 10,
       ticker: 'AAPL',
     };
@@ -248,7 +248,7 @@ describe('Order Schemas', () => {
   describe('OrderTypeSchema', () => {
     it('should accept valid order types', () => {
       const types = ['MARKET', 'LIMIT', 'STOP', 'STOP_LIMIT'];
-      types.forEach(type => {
+      types.forEach((type) => {
         const result = OrderTypeSchema.safeParse(type);
         expect(result.success).toBe(true);
       });
@@ -273,8 +273,17 @@ describe('Order Schemas', () => {
 
   describe('OrderStatusSchema', () => {
     it('should accept all valid statuses', () => {
-      const statuses = ['NEW', 'PROCESSING', 'CONFIRMED', 'PENDING', 'LOCAL', 'REPLACED', 'CANCELLED', 'REJECTED'];
-      statuses.forEach(status => {
+      const statuses = [
+        'NEW',
+        'PROCESSING',
+        'CONFIRMED',
+        'PENDING',
+        'LOCAL',
+        'REPLACED',
+        'CANCELLED',
+        'REJECTED',
+      ];
+      statuses.forEach((status) => {
         const result = OrderStatusSchema.safeParse(status);
         expect(result.success).toBe(true);
       });
@@ -293,7 +302,7 @@ describe('Order Schemas', () => {
       const validData = {
         createdOn: '2024-01-01T00:00:00Z',
         filledQuantity: 5,
-        filledValue: 750.00,
+        filledValue: 750.0,
         id: 123456,
         quantity: 10,
         side: 'BUY',
@@ -354,7 +363,7 @@ describe('Order Schemas', () => {
   describe('LimitOrderRequestSchema', () => {
     it('should validate valid limit order request', () => {
       const validData = {
-        limitPrice: 150.00,
+        limitPrice: 150.0,
         quantity: 10,
         ticker: 'AAPL',
         timeValidity: 'GTC',
@@ -365,7 +374,7 @@ describe('Order Schemas', () => {
 
     it('should reject negative limit price', () => {
       const invalidData = {
-        limitPrice: -150.00,
+        limitPrice: -150.0,
         quantity: 10,
         ticker: 'AAPL',
         timeValidity: 'GTC',
@@ -379,7 +388,7 @@ describe('Order Schemas', () => {
     it('should validate valid stop order request', () => {
       const validData = {
         quantity: 10,
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'DAY',
       };
@@ -402,9 +411,9 @@ describe('Order Schemas', () => {
   describe('StopLimitOrderRequestSchema', () => {
     it('should validate valid stop-limit order request', () => {
       const validData = {
-        limitPrice: 145.00,
+        limitPrice: 145.0,
         quantity: 10,
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'GTC',
       };
@@ -415,7 +424,7 @@ describe('Order Schemas', () => {
     it('should reject missing limit price', () => {
       const invalidData = {
         quantity: 10,
-        stopPrice: 140.00,
+        stopPrice: 140.0,
         ticker: 'AAPL',
         timeValidity: 'GTC',
       };
@@ -440,7 +449,7 @@ describe('Pie Schemas', () => {
   describe('PieSchema', () => {
     it('should validate valid pie', () => {
       const validData = {
-        cash: 100.00,
+        cash: 100.0,
         dividendCashAction: 'REINVEST',
         icon: 'BRIEFCASE',
         id: 123,
@@ -449,7 +458,7 @@ describe('Pie Schemas', () => {
           { expectedShare: 0.5, ticker: 'MSFT' },
         ],
         name: 'Tech Portfolio',
-        result: 50.00,
+        result: 50.0,
         status: 'ACTIVE',
       };
       const result = PieSchema.safeParse(validData);
@@ -533,19 +542,19 @@ describe('Historical Data Schemas', () => {
     it('should validate valid historical order', () => {
       const validData = {
         dateCreated: '2024-01-01T00:00:00Z',
-        fillCost: 5.00,
+        fillCost: 5.0,
         fillId: 123,
-        fillPrice: 150.00,
-        fillResult: 50.00,
+        fillPrice: 150.0,
+        fillResult: 50.0,
         fillType: 'MARKET',
         filledQuantity: 10,
-        filledValue: 1500.00,
+        filledValue: 1500.0,
         id: 456,
         orderedQuantity: 10,
-        orderedValue: 1500.00,
+        orderedValue: 1500.0,
         status: 'CONFIRMED',
         taxes: {
-          fillTax: 1.50,
+          fillTax: 1.5,
         },
         ticker: 'AAPL',
         timeValidity: 'DAY',
@@ -559,7 +568,7 @@ describe('Historical Data Schemas', () => {
   describe('DividendSchema', () => {
     it('should validate valid dividend', () => {
       const validData = {
-        amount: 10.50,
+        amount: 10.5,
         amountInEuro: 9.75,
         grossAmountPerShare: 1.05,
         paidOn: '2024-01-01',
@@ -574,9 +583,9 @@ describe('Historical Data Schemas', () => {
 
     it('should accept all valid dividend types', () => {
       const types = ['ORDINARY', 'SPECIAL', 'RETURN_OF_CAPITAL'];
-      types.forEach(type => {
+      types.forEach((type) => {
         const validData = {
-          amount: 10.50,
+          amount: 10.5,
           amountInEuro: 9.75,
           grossAmountPerShare: 1.05,
           paidOn: '2024-01-01',
@@ -594,7 +603,7 @@ describe('Historical Data Schemas', () => {
   describe('TransactionSchema', () => {
     it('should validate valid transaction', () => {
       const validData = {
-        amount: 1000.00,
+        amount: 1000.0,
         dateTime: '2024-01-01T00:00:00Z',
         reference: 'TXN-123',
         type: 'DEPOSIT',
@@ -604,10 +613,19 @@ describe('Historical Data Schemas', () => {
     });
 
     it('should accept all valid transaction types', () => {
-      const types = ['DEPOSIT', 'WITHDRAWAL', 'ORDER', 'DIVIDEND', 'AUTOINVEST', 'FEE', 'INTEREST', 'LENDING'];
-      types.forEach(type => {
+      const types = [
+        'DEPOSIT',
+        'WITHDRAWAL',
+        'ORDER',
+        'DIVIDEND',
+        'AUTOINVEST',
+        'FEE',
+        'INTEREST',
+        'LENDING',
+      ];
+      types.forEach((type) => {
         const validData = {
-          amount: 100.00,
+          amount: 100.0,
           dateTime: '2024-01-01T00:00:00Z',
           reference: 'TXN-123',
           type,

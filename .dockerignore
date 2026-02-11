@@ -59,14 +59,12 @@ logs/
 
 # OS files
 Thumbs.db
-.DS_Store
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 *.bak
-*.swp
 
 # Optional npm cache
 .npm/

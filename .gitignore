@@ -5,6 +5,16 @@ dist/
 .DS_Store
 *.tsbuildinfo
 
+# IDE / editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+
 # Test coverage
 coverage/
 .nyc_output/

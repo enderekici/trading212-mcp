@@ -1,36 +1,51 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Trading212Client } from '../../src/client.js';
 
 // Mock the Trading212Client
 vi.mock('../../src/client.js', () => {
   return {
-    Trading212Client: vi.fn().mockImplementation(() => ({
-      getAccountInfo: vi.fn().mockResolvedValue({ currencyCode: 'USD', id: 12345 }),
-      getAccountCash: vi.fn().mockResolvedValue({ free: 1000.50, total: 5000.00 }),
-      getAccountSummary: vi.fn().mockResolvedValue({
-        cash: { free: 1000.50, total: 5000.00 },
-        invested: 3500.00,
-        ppl: 500.25,
-        pieCash: 100.00,
-      }),
-      getPortfolio: vi.fn().mockResolvedValue([
-        {
+    // biome-ignore lint/complexity/useArrowFunction: must use function for constructor mock
+    Trading212Client: vi.fn(function () {
+      return {
+        getAccountInfo: vi.fn().mockResolvedValue({ currencyCode: 'USD', id: 12345 }),
+        getAccountCash: vi.fn().mockResolvedValue({ free: 1000.5, total: 5000.0 }),
+        getAccountSummary: vi.fn().mockResolvedValue({
+          cash: { free: 1000.5, total: 5000.0 },
+          invested: 3500.0,
+          ppl: 500.25,
+          pieCash: 100.0,
+        }),
+        getPortfolio: vi.fn().mockResolvedValue([
+          {
+            averagePrice: 150.25,
+            currentPrice: 155.5,
+            ppl: 52.5,
+            quantity: 10,
+            ticker: 'AAPL',
+          },
+        ]),
+        getPosition: vi.fn().mockResolvedValue({
           averagePrice: 150.25,
-          currentPrice: 155.50,
-          ppl: 52.50,
+          currentPrice: 155.5,
+          ppl: 52.5,
           quantity: 10,
           ticker: 'AAPL',
-        },
-      ]),
-      getPosition: vi.fn().mockResolvedValue({
-        averagePrice: 150.25,
-        currentPrice: 155.50,
-        ppl: 52.50,
-        quantity: 10,
-        ticker: 'AAPL',
-      }),
-      getOrders: vi.fn().mockResolvedValue([
-        {
+        }),
+        getOrders: vi.fn().mockResolvedValue([
+          {
+            createdOn: '2024-01-01T00:00:00Z',
+            filledQuantity: 0,
+            filledValue: 0,
+            id: 123456,
+            quantity: 10,
+            side: 'BUY',
+            status: 'NEW',
+            ticker: 'AAPL',
+            timeValidity: 'DAY',
+            type: 'MARKET',
+          },
+        ]),
+        getOrder: vi.fn().mockResolvedValue({
           createdOn: '2024-01-01T00:00:00Z',
           filledQuantity: 0,
           filledValue: 0,
@@ -41,106 +56,107 @@ vi.mock('../../src/client.js', () => {
           ticker: 'AAPL',
           timeValidity: 'DAY',
           type: 'MARKET',
-        },
-      ]),
-      getOrder: vi.fn().mockResolvedValue({
-        createdOn: '2024-01-01T00:00:00Z',
-        filledQuantity: 0,
-        filledValue: 0,
-        id: 123456,
-        quantity: 10,
-        side: 'BUY',
-        status: 'NEW',
-        ticker: 'AAPL',
-        timeValidity: 'DAY',
-        type: 'MARKET',
-      }),
-      cancelOrder: vi.fn().mockResolvedValue(undefined),
-      placeMarketOrder: vi.fn().mockResolvedValue({
-        createdOn: '2024-01-01T00:00:00Z',
-        filledQuantity: 0,
-        filledValue: 0,
-        id: 123456,
-        quantity: 10,
-        side: 'BUY',
-        status: 'NEW',
-        ticker: 'AAPL',
-        timeValidity: 'DAY',
-        type: 'MARKET',
-      }),
-      placeLimitOrder: vi.fn().mockResolvedValue({
-        createdOn: '2024-01-01T00:00:00Z',
-        filledQuantity: 0,
-        filledValue: 0,
-        id: 123456,
-        limitPrice: 150.00,
-        quantity: 10,
-        side: 'BUY',
-        status: 'NEW',
-        ticker: 'AAPL',
-        timeValidity: 'GTC',
-        type: 'LIMIT',
-      }),
-      placeStopOrder: vi.fn().mockResolvedValue({
-        createdOn: '2024-01-01T00:00:00Z',
-        filledQuantity: 0,
-        filledValue: 0,
-        id: 123456,
-        quantity: 10,
-        side: 'SELL',
-        status: 'NEW',
-        stopPrice: 140.00,
-        ticker: 'AAPL',
-        timeValidity: 'DAY',
-        type: 'STOP',
-      }),
-      placeStopLimitOrder: vi.fn().mockResolvedValue({
-        createdOn: '2024-01-01T00:00:00Z',
-        filledQuantity: 0,
-        filledValue: 0,
-        id: 123456,
-        limitPrice: 145.00,
-        quantity: 10,
-        side: 'SELL',
-        status: 'NEW',
-        stopPrice: 140.00,
-        ticker: 'AAPL',
-        timeValidity: 'GTC',
-        type: 'STOP_LIMIT',
-      }),
-      getInstruments: vi.fn().mockResolvedValue([
-        {
-          addedOn: '2024-01-01T00:00:00Z',
-          currencyCode: 'USD',
-          isin: 'US0378331005',
-          minTradeQuantity: 1,
-          name: 'Apple Inc.',
-          shortName: 'AAPL',
+        }),
+        cancelOrder: vi.fn().mockResolvedValue(undefined),
+        placeMarketOrder: vi.fn().mockResolvedValue({
+          createdOn: '2024-01-01T00:00:00Z',
+          filledQuantity: 0,
+          filledValue: 0,
+          id: 123456,
+          quantity: 10,
+          side: 'BUY',
+          status: 'NEW',
           ticker: 'AAPL',
-          type: 'STOCK',
-          workingScheduleId: 1,
-        },
-      ]),
-      getExchanges: vi.fn().mockResolvedValue([
-        {
-          id: 1,
-          name: 'NASDAQ',
-          workingSchedules: [
-            {
-              id: 1,
-              timeEvents: [
-                {
-                  date: '2024-01-01',
-                  type: 'OPEN',
-                },
-              ],
-            },
-          ],
-        },
-      ]),
-      getPies: vi.fn().mockResolvedValue([
-        {
-          cash: 100.00,
+          timeValidity: 'DAY',
+          type: 'MARKET',
+        }),
+        placeLimitOrder: vi.fn().mockResolvedValue({
+          createdOn: '2024-01-01T00:00:00Z',
+          filledQuantity: 0,
+          filledValue: 0,
+          id: 123456,
+          limitPrice: 150.0,
+          quantity: 10,
+          side: 'BUY',
+          status: 'NEW',
+          ticker: 'AAPL',
+          timeValidity: 'GTC',
+          type: 'LIMIT',
+        }),
+        placeStopOrder: vi.fn().mockResolvedValue({
+          createdOn: '2024-01-01T00:00:00Z',
+          filledQuantity: 0,
+          filledValue: 0,
+          id: 123456,
+          quantity: 10,
+          side: 'SELL',
+          status: 'NEW',
+          stopPrice: 140.0,
+          ticker: 'AAPL',
+          timeValidity: 'DAY',
+          type: 'STOP',
+        }),
+        placeStopLimitOrder: vi.fn().mockResolvedValue({
+          createdOn: '2024-01-01T00:00:00Z',
+          filledQuantity: 0,
+          filledValue: 0,
+          id: 123456,
+          limitPrice: 145.0,
+          quantity: 10,
+          side: 'SELL',
+          status: 'NEW',
+          stopPrice: 140.0,
+          ticker: 'AAPL',
+          timeValidity: 'GTC',
+          type: 'STOP_LIMIT',
+        }),
+        getInstruments: vi.fn().mockResolvedValue([
+          {
+            addedOn: '2024-01-01T00:00:00Z',
+            currencyCode: 'USD',
+            isin: 'US0378331005',
+            minTradeQuantity: 1,
+            name: 'Apple Inc.',
+            shortName: 'AAPL',
+            ticker: 'AAPL',
+            type: 'STOCK',
+            workingScheduleId: 1,
+          },
+        ]),
+        getExchanges: vi.fn().mockResolvedValue([
+          {
+            id: 1,
+            name: 'NASDAQ',
+            workingSchedules: [
+              {
+                id: 1,
+                timeEvents: [
+                  {
+                    date: '2024-01-01',
+                    type: 'OPEN',
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+        getPies: vi.fn().mockResolvedValue([
+          {
+            cash: 100.0,
+            dividendCashAction: 'REINVEST',
+            icon: 'BRIEFCASE',
+            id: 123,
+            instruments: [
+              { expectedShare: 0.5, ticker: 'AAPL' },
+              { expectedShare: 0.5, ticker: 'MSFT' },
+            ],
+            name: 'Tech Portfolio',
+            result: 50.0,
+            status: 'ACTIVE',
+          },
+        ]),
+        getPie: vi.fn().mockResolvedValue({
+          cash: 100.0,
           dividendCashAction: 'REINVEST',
           icon: 'BRIEFCASE',
           id: 123,
@@ -149,107 +165,94 @@ vi.mock('../../src/client.js', () => {
             { expectedShare: 0.5, ticker: 'MSFT' },
           ],
           name: 'Tech Portfolio',
-          result: 50.00,
+          result: 50.0,
           status: 'ACTIVE',
-        },
-      ]),
-      getPie: vi.fn().mockResolvedValue({
-        cash: 100.00,
-        dividendCashAction: 'REINVEST',
-        icon: 'BRIEFCASE',
-        id: 123,
-        instruments: [
-          { expectedShare: 0.5, ticker: 'AAPL' },
-          { expectedShare: 0.5, ticker: 'MSFT' },
-        ],
-        name: 'Tech Portfolio',
-        result: 50.00,
-        status: 'ACTIVE',
-      }),
-      createPie: vi.fn().mockResolvedValue({
-        cash: 0,
-        dividendCashAction: 'REINVEST',
-        icon: 'BRIEFCASE',
-        id: 123,
-        instruments: [
-          { expectedShare: 0.5, ticker: 'AAPL' },
-          { expectedShare: 0.5, ticker: 'MSFT' },
-        ],
-        name: 'Tech Portfolio',
-        result: 0,
-        status: 'ACTIVE',
-      }),
-      updatePie: vi.fn().mockResolvedValue({
-        cash: 100.00,
-        dividendCashAction: 'REINVEST',
-        icon: 'BRIEFCASE',
-        id: 123,
-        instruments: [
-          { expectedShare: 0.5, ticker: 'AAPL' },
-          { expectedShare: 0.5, ticker: 'MSFT' },
-        ],
-        name: 'Updated Portfolio',
-        result: 50.00,
-        status: 'ACTIVE',
-      }),
-      deletePie: vi.fn().mockResolvedValue(undefined),
-      getOrderHistory: vi.fn().mockResolvedValue({
-        items: [
-          {
-            dateCreated: '2024-01-01T00:00:00Z',
-            fillCost: 5.00,
-            fillId: 123,
-            fillPrice: 150.00,
-            fillResult: 50.00,
-            fillType: 'MARKET',
-            filledQuantity: 10,
-            filledValue: 1500.00,
-            id: 456,
-            orderedQuantity: 10,
-            orderedValue: 1500.00,
-            status: 'CONFIRMED',
-            taxes: {
-              fillTax: 1.50,
+        }),
+        createPie: vi.fn().mockResolvedValue({
+          cash: 0,
+          dividendCashAction: 'REINVEST',
+          icon: 'BRIEFCASE',
+          id: 123,
+          instruments: [
+            { expectedShare: 0.5, ticker: 'AAPL' },
+            { expectedShare: 0.5, ticker: 'MSFT' },
+          ],
+          name: 'Tech Portfolio',
+          result: 0,
+          status: 'ACTIVE',
+        }),
+        updatePie: vi.fn().mockResolvedValue({
+          cash: 100.0,
+          dividendCashAction: 'REINVEST',
+          icon: 'BRIEFCASE',
+          id: 123,
+          instruments: [
+            { expectedShare: 0.5, ticker: 'AAPL' },
+            { expectedShare: 0.5, ticker: 'MSFT' },
+          ],
+          name: 'Updated Portfolio',
+          result: 50.0,
+          status: 'ACTIVE',
+        }),
+        deletePie: vi.fn().mockResolvedValue(undefined),
+        getOrderHistory: vi.fn().mockResolvedValue({
+          items: [
+            {
+              dateCreated: '2024-01-01T00:00:00Z',
+              fillCost: 5.0,
+              fillId: 123,
+              fillPrice: 150.0,
+              fillResult: 50.0,
+              fillType: 'MARKET',
+              filledQuantity: 10,
+              filledValue: 1500.0,
+              id: 456,
+              orderedQuantity: 10,
+              orderedValue: 1500.0,
+              status: 'CONFIRMED',
+              taxes: {
+                fillTax: 1.5,
+              },
+              ticker: 'AAPL',
+              timeValidity: 'DAY',
+              type: 'MARKET',
             },
-            ticker: 'AAPL',
-            timeValidity: 'DAY',
-            type: 'MARKET',
-          },
-        ],
-      }),
-      getDividends: vi.fn().mockResolvedValue({
-        items: [
-          {
-            amount: 10.50,
-            amountInEuro: 9.75,
-            grossAmountPerShare: 1.05,
-            paidOn: '2024-01-01',
-            quantity: 10,
-            reference: 'DIV-123',
-            ticker: 'AAPL',
-            type: 'ORDINARY',
-          },
-        ],
-      }),
-      getTransactions: vi.fn().mockResolvedValue({
-        items: [
-          {
-            amount: 1000.00,
-            dateTime: '2024-01-01T00:00:00Z',
-            reference: 'TXN-123',
-            type: 'DEPOSIT',
-          },
-        ],
-      }),
-      requestExport: vi.fn().mockResolvedValue({ reportId: 456 }),
-      getRateLimitInfo: vi.fn().mockReturnValue({
-        limit: 10,
-        period: 60,
-        remaining: 9,
-        reset: 1234567890,
-        used: 1,
-      }),
-    })),
+          ],
+        }),
+        getDividends: vi.fn().mockResolvedValue({
+          items: [
+            {
+              amount: 10.5,
+              amountInEuro: 9.75,
+              grossAmountPerShare: 1.05,
+              paidOn: '2024-01-01',
+              quantity: 10,
+              reference: 'DIV-123',
+              ticker: 'AAPL',
+              type: 'ORDINARY',
+            },
+          ],
+        }),
+        getTransactions: vi.fn().mockResolvedValue({
+          items: [
+            {
+              amount: 1000.0,
+              dateTime: '2024-01-01T00:00:00Z',
+              reference: 'TXN-123',
+              type: 'DEPOSIT',
+            },
+          ],
+        }),
+        requestExport: vi.fn().mockResolvedValue({ reportId: 456 }),
+        getRateLimitInfo: vi.fn().mockReturnValue({
+          limit: 10,
+          period: 60,
+          remaining: 9,
+          reset: 1234567890,
+          used: 1,
+        }),
+      };
+    }),
   };
 });
 
@@ -341,7 +344,7 @@ describe('MCP Server Integration', () => {
 
       it('should handle place_limit_order tool', async () => {
         const orderRequest = {
-          limitPrice: 150.00,
+          limitPrice: 150.0,
           quantity: 10,
           ticker: 'AAPL',
           timeValidity: 'GTC' as const,
@@ -356,7 +359,7 @@ describe('MCP Server Integration', () => {
       it('should handle place_stop_order tool', async () => {
         const orderRequest = {
           quantity: 10,
-          stopPrice: 140.00,
+          stopPrice: 140.0,
           ticker: 'AAPL',
           timeValidity: 'DAY' as const,
         };
@@ -369,9 +372,9 @@ describe('MCP Server Integration', () => {
 
       it('should handle place_stop_limit_order tool', async () => {
         const orderRequest = {
-          limitPrice: 145.00,
+          limitPrice: 145.0,
           quantity: 10,
-          stopPrice: 140.00,
+          stopPrice: 140.0,
           ticker: 'AAPL',
           timeValidity: 'GTC' as const,
         };

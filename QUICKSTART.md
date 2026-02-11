@@ -75,7 +75,7 @@ Edit:
 
 ### 📦 Method B: Global npm Install
 
-**Requires Node.js 18+**
+**Requires Node.js 24+**
 
 **Step 1:** Install globally
 
@@ -105,7 +105,7 @@ npm install -g trading212-mcp
 
 ### 🛠️ Method C: Local Build (For Development)
 
-**Requires Node.js 18+**
+**Requires Node.js 24+**
 
 **Step 1:** Clone and build
 
