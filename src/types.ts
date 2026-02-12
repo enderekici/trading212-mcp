@@ -213,7 +213,7 @@ export const PieInstrumentSchema = z
 
 export const PieSchema = z
   .object({
-    id: z.number(),
+    id: z.number().optional(),
     name: z.string().optional(),
     icon: z.string().optional(),
     cash: z.number().optional(),
