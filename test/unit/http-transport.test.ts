@@ -118,7 +118,11 @@ function request(
           responseBody += chunk;
         });
         res.on('end', () =>
-          resolve({ statusCode: res.statusCode!, body: responseBody, headers: res.headers }),
+          resolve({
+            statusCode: res.statusCode ?? 0,
+            body: responseBody,
+            headers: res.headers,
+          }),
         );
       },
     );
@@ -165,11 +169,17 @@ describe('HTTP Transport', () => {
   });
 
   it('should create a new session on POST /mcp', async () => {
-    const res = await request(httpServer, 'POST', '/mcp', {}, {
-      jsonrpc: '2.0',
-      method: 'initialize',
-      id: 1,
-    });
+    const res = await request(
+      httpServer,
+      'POST',
+      '/mcp',
+      {},
+      {
+        jsonrpc: '2.0',
+        method: 'initialize',
+        id: 1,
+      },
+    );
     expect(res.statusCode).toBe(200);
   });
 
