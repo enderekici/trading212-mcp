@@ -51,7 +51,8 @@ export class Trading212Client {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const credentials = Buffer.from(`${this.apiKey}:`).toString('base64');
+    const raw = this.apiKey.includes(':') ? this.apiKey : `${this.apiKey}:`;
+    const credentials = Buffer.from(raw).toString('base64');
     return {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/json',
