@@ -38,10 +38,10 @@ Current coverage status:
 - **MCP Tools**: All 26 tools tested
 
 Coverage thresholds:
-- Lines: 17% (will increase as more integration tests are added)
-- Functions: 50%
-- Branches: 50%
-- Statements: 17%
+- Lines: 90%
+- Functions: 90%
+- Branches: 90%
+- Statements: 90%
 
 ## Test Categories
 

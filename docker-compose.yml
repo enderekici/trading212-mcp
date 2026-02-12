@@ -36,7 +36,6 @@ services:
 
     # Stdin/stdout configuration for MCP stdio transport
     stdin_open: true
-    tty: true
 
     # Security options
     security_opt:

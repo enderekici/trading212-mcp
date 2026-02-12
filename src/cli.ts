@@ -2,6 +2,7 @@
 import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { VERSION } from './version.js';
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -62,13 +63,13 @@ DOCUMENTATION:
   API Docs: https://docs.trading212.com/api
 
 VERSION:
-  1.0.0
+  ${VERSION}
 `);
 }
 
 // Show version
 function showVersion() {
-  console.log('trading212-mcp version 1.0.0');
+  console.log(`trading212-mcp version ${VERSION}`);
 }
 
 // Parse arguments

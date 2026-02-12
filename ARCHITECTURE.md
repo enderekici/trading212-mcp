@@ -135,8 +135,7 @@ trading212-mcp/
 │
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml            # Test + build + lint
-│       └── docker.yml        # Docker build + publish
+│       └── ci.yml            # Test + build + lint + Docker
 │
 ├── README.md                 # Main documentation
 ├── QUICKSTART.md             # 5-minute setup guide

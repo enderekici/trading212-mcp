@@ -9,7 +9,6 @@ import {
 import { z } from 'zod';
 import { Trading212Client } from './client.js';
 import {
-  type CreatePieRequest,
   CreatePieRequestSchema,
   ExportRequestSchema,
   LimitOrderRequestSchema,
@@ -19,6 +18,7 @@ import {
 } from './types.js';
 import { AuthError, serializeError, ValidationError } from './utils/errors.js';
 import logger from './utils/logger.js';
+import { VERSION } from './version.js';
 
 // Configuration from environment variables
 const API_KEY = process.env.TRADING212_API_KEY;
@@ -42,7 +42,7 @@ const client = new Trading212Client({
 const server = new Server(
   {
     name: 'trading212-mcp',
-    version: '1.0.0',
+    version: VERSION,
   },
   {
     capabilities: {
@@ -490,6 +490,56 @@ const tools: Tool[] = [
   },
 ];
 
+// Zod schemas for tool input validation
+const TickerInputSchema = z.object({
+  ticker: z.string(),
+});
+
+const OrderIdInputSchema = z.object({
+  orderId: z.number(),
+});
+
+const PieIdInputSchema = z.object({
+  pieId: z.number(),
+});
+
+const SearchInputSchema = z.object({
+  search: z.string().optional(),
+});
+
+const UpdatePieInputSchema = z.object({
+  pieId: z.number(),
+  name: z.string().optional(),
+  icon: z.string().optional(),
+  instrumentShares: z.record(z.string(), z.number()).optional(),
+  dividendCashAction: z.enum(['REINVEST', 'TO_ACCOUNT_CASH']).optional(),
+  goal: z.number().optional(),
+});
+
+const DeletePieInputSchema = z.object({
+  pieId: z.number(),
+});
+
+const PaginatedInputSchema = z.object({
+  cursor: z.number().optional(),
+  limit: z.number().optional(),
+});
+
+const PaginatedWithTickerInputSchema = z.object({
+  cursor: z.number().optional(),
+  limit: z.number().optional(),
+  ticker: z.string().optional(),
+});
+
+const ExportInputSchema = z.object({
+  timeFrom: z.string(),
+  timeTo: z.string(),
+  includeDividends: z.boolean().optional().default(true),
+  includeInterest: z.boolean().optional().default(true),
+  includeOrders: z.boolean().optional().default(true),
+  includeTransactions: z.boolean().optional().default(true),
+});
+
 // Handler for listing tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools };
@@ -552,7 +602,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_position': {
-        const { ticker } = args as { ticker: string };
+        const { ticker } = TickerInputSchema.parse(args);
         const position = await client.getPosition(ticker);
         return {
           content: [
@@ -578,7 +628,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_order': {
-        const { orderId } = args as { orderId: number };
+        const { orderId } = OrderIdInputSchema.parse(args);
         const order = await client.getOrder(orderId);
         return {
           content: [
@@ -591,7 +641,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'cancel_order': {
-        const { orderId } = args as { orderId: number };
+        const { orderId } = OrderIdInputSchema.parse(args);
         await client.cancelOrder(orderId);
         return {
           content: [
@@ -657,7 +707,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // Instruments & Market Data
       case 'get_instruments': {
-        const { search } = args as { search?: string };
+        const { search } = SearchInputSchema.parse(args);
         let instruments = await client.getInstruments();
 
         if (search) {
@@ -707,7 +757,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_pie': {
-        const { pieId } = args as { pieId: number };
+        const { pieId } = PieIdInputSchema.parse(args);
         const pie = await client.getPie(pieId);
         return {
           content: [
@@ -733,7 +783,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'update_pie': {
-        const { pieId, ...updateData } = args as { pieId: number } & Partial<CreatePieRequest>;
+        const { pieId, ...updateData } = UpdatePieInputSchema.parse(args);
         const pie = await client.updatePie(pieId, updateData);
         return {
           content: [
@@ -746,7 +796,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'delete_pie': {
-        const { pieId } = args as { pieId: number };
+        const { pieId } = DeletePieInputSchema.parse(args);
         await client.deletePie(pieId);
         return {
           content: [
@@ -760,11 +810,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // Historical Data
       case 'get_order_history': {
-        const { cursor, limit, ticker } = args as {
-          cursor?: number;
-          limit?: number;
-          ticker?: string;
-        };
+        const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
         const history = await client.getOrderHistory({ cursor, limit, ticker });
         return {
           content: [
@@ -777,11 +823,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_dividends': {
-        const { cursor, limit, ticker } = args as {
-          cursor?: number;
-          limit?: number;
-          ticker?: string;
-        };
+        const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
         const dividends = await client.getDividends({ cursor, limit, ticker });
         return {
           content: [
@@ -794,7 +836,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_transactions': {
-        const { cursor, limit } = args as { cursor?: number; limit?: number };
+        const { cursor, limit } = PaginatedInputSchema.parse(args);
         const transactions = await client.getTransactions({ cursor, limit });
         return {
           content: [
@@ -810,18 +852,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const {
           timeFrom,
           timeTo,
-          includeDividends = true,
-          includeInterest = true,
-          includeOrders = true,
-          includeTransactions = true,
-        } = args as {
-          timeFrom: string;
-          timeTo: string;
-          includeDividends?: boolean;
-          includeInterest?: boolean;
-          includeOrders?: boolean;
-          includeTransactions?: boolean;
-        };
+          includeDividends,
+          includeInterest,
+          includeOrders,
+          includeTransactions,
+        } = ExportInputSchema.parse(args);
 
         const validated = ExportRequestSchema.parse({
           timeFrom,
@@ -899,7 +934,7 @@ async function main() {
     logger.info({
       msg: 'Starting Trading 212 MCP server',
       environment: ENVIRONMENT,
-      version: '1.0.0',
+      version: VERSION,
       nodeVersion: process.version,
       platform: process.platform,
       logLevel: logger.level,

@@ -797,6 +797,222 @@ describe('Trading212Client', () => {
     });
   });
 
+  describe('Historical Data - query param building', () => {
+    it('should get order history without any params', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getOrderHistory();
+      expect(result.items).toHaveLength(0);
+      expect(result.nextPagePath).toBeUndefined();
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).not.toContain('?');
+    });
+
+    it('should get order history with cursor param', async () => {
+      const mockResponse = {
+        items: [],
+        nextPagePath: '/equity/history/orders?cursor=200',
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getOrderHistory({ cursor: 100 });
+      expect(result.items).toHaveLength(0);
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('cursor=100');
+    });
+
+    it('should get order history with all params', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      await client.getOrderHistory({ cursor: 50, limit: 25, ticker: 'MSFT' });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('cursor=50');
+      expect(fetchCall[0]).toContain('limit=25');
+      expect(fetchCall[0]).toContain('ticker=MSFT');
+    });
+
+    it('should get dividends without any params', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getDividends();
+      expect(result.items).toHaveLength(0);
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).not.toContain('?');
+    });
+
+    it('should get dividends with cursor param', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      await client.getDividends({ cursor: 10 });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('cursor=10');
+    });
+
+    it('should get dividends with limit param', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      await client.getDividends({ limit: 20 });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('limit=20');
+    });
+
+    it('should get transactions with cursor and limit', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      await client.getTransactions({ cursor: 5, limit: 15 });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('cursor=5');
+      expect(fetchCall[0]).toContain('limit=15');
+    });
+
+    it('should get transactions without params', async () => {
+      const mockResponse = {
+        items: [],
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: new Map(),
+        json: async () => mockResponse,
+      });
+
+      const result = await client.getTransactions();
+      expect(result.items).toHaveLength(0);
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).not.toContain('?');
+    });
+  });
+
+  describe('error parsing edge cases', () => {
+    it('should fallback to errorText when JSON has no message or errorMessage', async () => {
+      const errorJson = JSON.stringify({ code: 'UNKNOWN', detail: 'something went wrong' });
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Map(),
+        text: async () => errorJson,
+      });
+
+      await expect(client.getAccountInfo()).rejects.toThrow(errorJson);
+    });
+
+    it('should use errorMessage when message is not present', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Map(),
+        text: async () => JSON.stringify({ errorMessage: 'Forbidden access' }),
+      });
+
+      await expect(client.getAccountInfo()).rejects.toThrow('Forbidden access');
+    });
+
+    it('should handle JSON with empty message field falling back to errorMessage', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Map(),
+        text: async () => JSON.stringify({ message: '', errorMessage: 'actual error' }),
+      });
+
+      await expect(client.getAccountInfo()).rejects.toThrow('actual error');
+    });
+
+    it('should handle JSON with null message falling back to errorText', async () => {
+      const errorJson = JSON.stringify({ message: null, errorMessage: null });
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Map(),
+        text: async () => errorJson,
+      });
+
+      await expect(client.getAccountInfo()).rejects.toThrow(errorJson);
+    });
+  });
+
+  describe('rate limit info with partial headers', () => {
+    it('should return null when some rate limit headers are missing', async () => {
+      const mockResponse = { currencyCode: 'USD', id: 12345 };
+      const partialHeaders = new Map([
+        ['x-ratelimit-limit', '10'],
+        ['x-ratelimit-period', '60'],
+        // missing remaining, reset, used
+      ]);
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        headers: partialHeaders,
+        json: async () => mockResponse,
+      });
+
+      await client.getAccountInfo();
+      const rateLimitInfo = client.getRateLimitInfo('/equity/account/info');
+      expect(rateLimitInfo).toBeNull();
+    });
+  });
+
   describe('environment configuration', () => {
     it('should construct correct demo URL', async () => {
       const demoClient = new Trading212Client({

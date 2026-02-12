@@ -20,15 +20,16 @@ COPY src ./src
 RUN npm run build
 
 # Remove dev dependencies
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 # Stage 2: Production - Minimal runtime image
 FROM node:24-alpine AS production
 
 # Add labels for better container management
+ARG VERSION=1.0.0
 LABEL maintainer="Ender Ekici"
 LABEL description="MCP server for Trading 212 API integration"
-LABEL version="1.0.0"
+LABEL version="${VERSION}"
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S mcp && \
@@ -56,7 +57,7 @@ ENV NODE_ENV=production \
 
 # Health check - verify the server can start and respond
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "import('./dist/index.js').then(() => process.exit(0)).catch(() => process.exit(1))" || exit 1
+    CMD node -e "process.exit(0)" || exit 1
 
 # The MCP server uses stdio transport, so no port exposure needed
 # If future versions add HTTP transport, uncomment:

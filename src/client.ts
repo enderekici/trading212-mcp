@@ -32,6 +32,7 @@ import {
   type Transaction,
   TransactionSchema,
 } from './types.js';
+import { ApiError, AuthError, RateLimitError } from './utils/errors.js';
 
 export class Trading212Client {
   private baseUrl: string;
@@ -98,6 +99,14 @@ export class Trading212Client {
     }
 
     if (!response.ok) {
+      if (response.status === 429) {
+        const headersObj: Record<string, string> = {};
+        response.headers.forEach((value, key) => {
+          headersObj[key] = value;
+        });
+        throw RateLimitError.fromHeaders(headersObj);
+      }
+
       const errorText = await response.text();
       let errorMessage: string;
       try {
@@ -106,7 +115,16 @@ export class Trading212Client {
       } catch {
         errorMessage = errorText;
       }
-      throw new Error(`Trading 212 API Error (${response.status}): ${errorMessage}`);
+
+      if (response.status === 401) {
+        throw new AuthError(`Trading 212 API Error (401): ${errorMessage}`);
+      }
+
+      throw new ApiError(
+        `Trading 212 API Error (${response.status}): ${errorMessage}`,
+        response.status,
+        errorText,
+      );
     }
 
     const data = await response.json();
