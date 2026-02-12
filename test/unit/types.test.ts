@@ -154,7 +154,16 @@ describe('Instrument Schemas', () => {
     });
 
     it('should accept all instrument types including new API types', () => {
-      const types = ['STOCK', 'ETF', 'FUND', 'CRYPTOCURRENCY', 'FOREX', 'FUTURES', 'INDEX', 'WARRANT'];
+      const types = [
+        'STOCK',
+        'ETF',
+        'FUND',
+        'CRYPTOCURRENCY',
+        'FOREX',
+        'FUTURES',
+        'INDEX',
+        'WARRANT',
+      ];
       types.forEach((type) => {
         const validData = {
           ticker: 'TEST',
