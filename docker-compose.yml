@@ -7,10 +7,16 @@ services:
 
     container_name: trading212-mcp
 
+    # Expose MCP HTTP port
+    ports:
+      - "3012:3012"
+
     # Environment variables
     environment:
       - TRADING212_API_KEY=${TRADING212_API_KEY:?TRADING212_API_KEY environment variable is required}
       - TRADING212_ENVIRONMENT=${TRADING212_ENVIRONMENT:-demo}
+      - TRADING212_TRANSPORT=http
+      - TRADING212_MCP_PORT=3012
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - NODE_ENV=production
 
@@ -27,16 +33,13 @@ services:
           cpus: '0.25'
           memory: 256M
 
-    # Health check configuration
+    # Health check against the HTTP endpoint
     healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3012/health').then(r=>{if(!r.ok)throw 1})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
-
-    # Stdin/stdout configuration for MCP stdio transport
-    stdin_open: true
 
     # Security options
     security_opt:
@@ -53,21 +56,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-    # Optional: Volume for persistent data (if needed in future)
-    # volumes:
-    #   - ./data:/app/data:rw
-
-    # Network configuration (if needed for future HTTP transport)
-    # networks:
-    #   - trading212-network
-
-# Optional: Define custom network
-# networks:
-#   trading212-network:
-#     driver: bridge
-
-# Optional: Define volumes for persistence
-# volumes:
-#   trading212-data:
-#     driver: local

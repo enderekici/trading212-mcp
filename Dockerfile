@@ -59,9 +59,8 @@ ENV NODE_ENV=production \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "process.exit(0)" || exit 1
 
-# The MCP server uses stdio transport, so no port exposure needed
-# If future versions add HTTP transport, uncomment:
-# EXPOSE 3000
+# Expose MCP HTTP port (used when TRADING212_TRANSPORT=http)
+EXPOSE 3012
 
-# Start the MCP server
+# Start the MCP server (stdio by default, set TRADING212_TRANSPORT=http for HTTP)
 CMD ["node", "dist/index.js"]
