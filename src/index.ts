@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+import { randomUUID } from 'node:crypto';
+import http from 'node:http';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -38,18 +41,22 @@ const client = new Trading212Client({
   environment: ENVIRONMENT,
 });
 
-// Create MCP server
-const server = new Server(
-  {
-    name: 'trading212-mcp',
-    version: VERSION,
-  },
-  {
-    capabilities: {
-      tools: {},
+function createServer(): Server {
+  return new Server(
+    {
+      name: 'trading212-mcp',
+      version: VERSION,
     },
-  },
-);
+    {
+      capabilities: {
+        tools: {},
+      },
+    },
+  );
+}
+
+// Create MCP server
+const server = createServer();
 
 // Define all available tools
 const tools: Tool[] = [
@@ -540,413 +547,552 @@ const ExportInputSchema = z.object({
   includeTransactions: z.boolean().optional().default(true),
 });
 
-// Handler for listing tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools };
-});
+/**
+ * Register MCP tool handlers on a Server instance.
+ * Called once for stdio, and once per HTTP session for streamable HTTP.
+ */
+function registerHandlers(target: Server): void {
+  target.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools };
+  });
 
-// Handler for tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  target.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
 
-  try {
-    switch (name) {
-      // Account Management
-      case 'get_account_info': {
-        const info = await client.getAccountInfo();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(info, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'get_account_cash': {
-        const cash = await client.getAccountCash();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(cash, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'get_account_summary': {
-        const summary = await client.getAccountSummary();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(summary, null, 2),
-            },
-          ],
-        };
-      }
-
-      // Portfolio/Positions
-      case 'get_portfolio': {
-        const portfolio = await client.getPortfolio();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(portfolio, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'get_position': {
-        const { ticker } = TickerInputSchema.parse(args);
-        const position = await client.getPosition(ticker);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(position, null, 2),
-            },
-          ],
-        };
-      }
-
-      // Order Management
-      case 'get_orders': {
-        const orders = await client.getOrders();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(orders, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'get_order': {
-        const { orderId } = OrderIdInputSchema.parse(args);
-        const order = await client.getOrder(orderId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(order, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'cancel_order': {
-        const { orderId } = OrderIdInputSchema.parse(args);
-        await client.cancelOrder(orderId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Order ${orderId} cancelled successfully`,
-            },
-          ],
-        };
-      }
-
-      case 'place_market_order': {
-        const validated = MarketOrderRequestSchema.parse(args);
-        const order = await client.placeMarketOrder(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(order, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'place_limit_order': {
-        const validated = LimitOrderRequestSchema.parse(args);
-        const order = await client.placeLimitOrder(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(order, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'place_stop_order': {
-        const validated = StopOrderRequestSchema.parse(args);
-        const order = await client.placeStopOrder(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(order, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'place_stop_limit_order': {
-        const validated = StopLimitOrderRequestSchema.parse(args);
-        const order = await client.placeStopLimitOrder(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(order, null, 2),
-            },
-          ],
-        };
-      }
-
-      // Instruments & Market Data
-      case 'get_instruments': {
-        const { search } = SearchInputSchema.parse(args);
-        let instruments = await client.getInstruments();
-
-        if (search) {
-          const searchLower = search.toLowerCase();
-          instruments = instruments.filter(
-            (i) =>
-              i.ticker.toLowerCase().includes(searchLower) ||
-              i.name.toLowerCase().includes(searchLower) ||
-              i.shortName.toLowerCase().includes(searchLower) ||
-              i.isin.toLowerCase().includes(searchLower),
-          );
+    try {
+      switch (name) {
+        // Account Management
+        case 'get_account_info': {
+          const info = await client.getAccountInfo();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(info, null, 2),
+              },
+            ],
+          };
         }
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(instruments, null, 2),
-            },
-          ],
-        };
-      }
+        case 'get_account_cash': {
+          const cash = await client.getAccountCash();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(cash, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'get_exchanges': {
-        const exchanges = await client.getExchanges();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(exchanges, null, 2),
-            },
-          ],
-        };
-      }
+        case 'get_account_summary': {
+          const summary = await client.getAccountSummary();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(summary, null, 2),
+              },
+            ],
+          };
+        }
 
-      // Pies
-      case 'get_pies': {
-        const pies = await client.getPies();
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(pies, null, 2),
-            },
-          ],
-        };
-      }
+        // Portfolio/Positions
+        case 'get_portfolio': {
+          const portfolio = await client.getPortfolio();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(portfolio, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'get_pie': {
-        const { pieId } = PieIdInputSchema.parse(args);
-        const pie = await client.getPie(pieId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(pie, null, 2),
-            },
-          ],
-        };
-      }
+        case 'get_position': {
+          const { ticker } = TickerInputSchema.parse(args);
+          const position = await client.getPosition(ticker);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(position, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'create_pie': {
-        const validated = CreatePieRequestSchema.parse(args);
-        const pie = await client.createPie(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(pie, null, 2),
-            },
-          ],
-        };
-      }
+        // Order Management
+        case 'get_orders': {
+          const orders = await client.getOrders();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(orders, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'update_pie': {
-        const { pieId, ...updateData } = UpdatePieInputSchema.parse(args);
-        const pie = await client.updatePie(pieId, updateData);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(pie, null, 2),
-            },
-          ],
-        };
-      }
+        case 'get_order': {
+          const { orderId } = OrderIdInputSchema.parse(args);
+          const order = await client.getOrder(orderId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(order, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'delete_pie': {
-        const { pieId } = DeletePieInputSchema.parse(args);
-        await client.deletePie(pieId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Pie ${pieId} deleted successfully`,
-            },
-          ],
-        };
-      }
+        case 'cancel_order': {
+          const { orderId } = OrderIdInputSchema.parse(args);
+          await client.cancelOrder(orderId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Order ${orderId} cancelled successfully`,
+              },
+            ],
+          };
+        }
 
-      // Historical Data
-      case 'get_order_history': {
-        const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
-        const history = await client.getOrderHistory({ cursor, limit, ticker });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(history, null, 2),
-            },
-          ],
-        };
-      }
+        case 'place_market_order': {
+          const validated = MarketOrderRequestSchema.parse(args);
+          const order = await client.placeMarketOrder(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(order, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'get_dividends': {
-        const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
-        const dividends = await client.getDividends({ cursor, limit, ticker });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(dividends, null, 2),
-            },
-          ],
-        };
-      }
+        case 'place_limit_order': {
+          const validated = LimitOrderRequestSchema.parse(args);
+          const order = await client.placeLimitOrder(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(order, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'get_transactions': {
-        const { cursor, limit } = PaginatedInputSchema.parse(args);
-        const transactions = await client.getTransactions({ cursor, limit });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(transactions, null, 2),
-            },
-          ],
-        };
-      }
+        case 'place_stop_order': {
+          const validated = StopOrderRequestSchema.parse(args);
+          const order = await client.placeStopOrder(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(order, null, 2),
+              },
+            ],
+          };
+        }
 
-      case 'request_export': {
-        const {
-          timeFrom,
-          timeTo,
-          includeDividends,
-          includeInterest,
-          includeOrders,
-          includeTransactions,
-        } = ExportInputSchema.parse(args);
+        case 'place_stop_limit_order': {
+          const validated = StopLimitOrderRequestSchema.parse(args);
+          const order = await client.placeStopLimitOrder(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(order, null, 2),
+              },
+            ],
+          };
+        }
 
-        const validated = ExportRequestSchema.parse({
-          timeFrom,
-          timeTo,
-          dataIncluded: {
+        // Instruments & Market Data
+        case 'get_instruments': {
+          const { search } = SearchInputSchema.parse(args);
+          let instruments = await client.getInstruments();
+
+          if (search) {
+            const searchLower = search.toLowerCase();
+            instruments = instruments.filter(
+              (i) =>
+                i.ticker.toLowerCase().includes(searchLower) ||
+                i.name.toLowerCase().includes(searchLower) ||
+                i.shortName.toLowerCase().includes(searchLower) ||
+                i.isin.toLowerCase().includes(searchLower),
+            );
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(instruments, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'get_exchanges': {
+          const exchanges = await client.getExchanges();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(exchanges, null, 2),
+              },
+            ],
+          };
+        }
+
+        // Pies
+        case 'get_pies': {
+          const pies = await client.getPies();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(pies, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'get_pie': {
+          const { pieId } = PieIdInputSchema.parse(args);
+          const pie = await client.getPie(pieId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(pie, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'create_pie': {
+          const validated = CreatePieRequestSchema.parse(args);
+          const pie = await client.createPie(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(pie, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'update_pie': {
+          const { pieId, ...updateData } = UpdatePieInputSchema.parse(args);
+          const pie = await client.updatePie(pieId, updateData);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(pie, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'delete_pie': {
+          const { pieId } = DeletePieInputSchema.parse(args);
+          await client.deletePie(pieId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Pie ${pieId} deleted successfully`,
+              },
+            ],
+          };
+        }
+
+        // Historical Data
+        case 'get_order_history': {
+          const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
+          const history = await client.getOrderHistory({ cursor, limit, ticker });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(history, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'get_dividends': {
+          const { cursor, limit, ticker } = PaginatedWithTickerInputSchema.parse(args);
+          const dividends = await client.getDividends({ cursor, limit, ticker });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(dividends, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'get_transactions': {
+          const { cursor, limit } = PaginatedInputSchema.parse(args);
+          const transactions = await client.getTransactions({ cursor, limit });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(transactions, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'request_export': {
+          const {
+            timeFrom,
+            timeTo,
             includeDividends,
             includeInterest,
             includeOrders,
             includeTransactions,
-          },
-        });
+          } = ExportInputSchema.parse(args);
 
-        const result = await client.requestExport(validated);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
+          const validated = ExportRequestSchema.parse({
+            timeFrom,
+            timeTo,
+            dataIncluded: {
+              includeDividends,
+              includeInterest,
+              includeOrders,
+              includeTransactions,
             },
-          ],
-        };
-      }
+          });
 
-      default:
-        logger.warn({ msg: 'Unknown tool requested', tool: name });
+          const result = await client.requestExport(validated);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        default:
+          logger.warn({ msg: 'Unknown tool requested', tool: name });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Unknown tool: ${name}`,
+              },
+            ],
+            isError: true,
+          };
+      }
+    } catch (error) {
+      // Log error with structured data
+      logger.error({
+        msg: 'Tool execution failed',
+        tool: name,
+        args,
+        error: serializeError(error),
+      });
+
+      // Handle validation errors specially
+      if (error instanceof z.ZodError) {
+        const validationError = ValidationError.fromZodError(error);
         return {
           content: [
             {
               type: 'text',
-              text: `Unknown tool: ${name}`,
+              text: `Validation Error: ${validationError.message}\n${JSON.stringify(validationError.issues, null, 2)}`,
             },
           ],
           isError: true,
         };
-    }
-  } catch (error) {
-    // Log error with structured data
-    logger.error({
-      msg: 'Tool execution failed',
-      tool: name,
-      args,
-      error: serializeError(error),
-    });
+      }
 
-    // Handle validation errors specially
-    if (error instanceof z.ZodError) {
-      const validationError = ValidationError.fromZodError(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         content: [
           {
             type: 'text',
-            text: `Validation Error: ${validationError.message}\n${JSON.stringify(validationError.issues, null, 2)}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
       };
     }
+  });
+}
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error: ${errorMessage}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-});
+// Register handlers on the default (stdio) server
+registerHandlers(server);
 
-// Start the server
+// ---------------------------------------------------------------------------
+// Stdio transport
+// ---------------------------------------------------------------------------
+
+async function startStdio(): Promise<void> {
+  logger.info({
+    msg: 'Starting Trading 212 MCP server',
+    transport: 'stdio',
+    environment: ENVIRONMENT,
+    version: VERSION,
+    nodeVersion: process.version,
+    platform: process.platform,
+    logLevel: logger.level,
+  });
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+
+  logger.info({
+    msg: 'Trading 212 MCP server started successfully',
+    transport: 'stdio',
+    environment: ENVIRONMENT,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Streamable HTTP transport
+// ---------------------------------------------------------------------------
+
+export async function startHttpServer(port: number, host = '0.0.0.0'): Promise<http.Server> {
+  const transports = new Map<string, StreamableHTTPServerTransport>();
+
+  const httpServer = http.createServer(async (req, res) => {
+    const url = new URL(req.url || '/', `http://${req.headers.host}`);
+
+    // Health check
+    if (url.pathname === '/health' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', transport: 'streamable-http' }));
+      return;
+    }
+
+    // MCP endpoint
+    if (url.pathname === '/mcp') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+      res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
+      // Look up existing session transport
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      let transport = sessionId ? transports.get(sessionId) : undefined;
+
+      // New session: create transport + connect a fresh MCP server
+      if (!transport && req.method === 'POST') {
+        const newTransport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id) => {
+            transports.set(id, newTransport);
+            logger.info({ sessionId: id }, 'MCP HTTP session created');
+          },
+        });
+
+        newTransport.onclose = () => {
+          const id = newTransport.sessionId;
+          if (id) transports.delete(id);
+          logger.info({ sessionId: id }, 'MCP HTTP session closed');
+        };
+
+        transport = newTransport;
+
+        // Each HTTP session gets its own MCP Server + handlers
+        const sessionServer = createServer();
+        registerHandlers(sessionServer);
+        await sessionServer.connect(transport);
+      }
+
+      if (!transport) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No valid session. Send a POST to initialize.' }));
+        return;
+      }
+
+      // Parse body for POST requests
+      let body: unknown;
+      if (req.method === 'POST') {
+        const MAX_BODY_SIZE = 1024 * 1024; // 1MB
+        const chunks: Buffer[] = [];
+        let totalSize = 0;
+        for await (const chunk of req) {
+          totalSize += chunk.length;
+          if (totalSize > MAX_BODY_SIZE) {
+            res.writeHead(413);
+            res.end(JSON.stringify({ error: 'Request body too large' }));
+            return;
+          }
+          chunks.push(chunk as Buffer);
+        }
+        body = JSON.parse(Buffer.concat(chunks).toString());
+      }
+
+      await transport.handleRequest(req, res, body);
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  });
+
+  return new Promise((resolve) => {
+    httpServer.listen(port, host, () => {
+      logger.info({
+        msg: 'Trading 212 MCP server started successfully',
+        transport: 'streamable-http',
+        environment: ENVIRONMENT,
+        version: VERSION,
+        url: `http://${host}:${port}/mcp`,
+      });
+      resolve(httpServer);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
+
+const useHttp = process.env.TRADING212_TRANSPORT === 'http';
+
 async function main() {
   try {
-    logger.info({
-      msg: 'Starting Trading 212 MCP server',
-      environment: ENVIRONMENT,
-      version: VERSION,
-      nodeVersion: process.version,
-      platform: process.platform,
-      logLevel: logger.level,
-    });
+    if (useHttp) {
+      const port = Number.parseInt(process.env.TRADING212_MCP_PORT || '3012', 10);
+      const host = process.env.TRADING212_MCP_HOST || '0.0.0.0';
+      const httpServer = await startHttpServer(port, host);
 
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-
-    logger.info({
-      msg: 'Trading 212 MCP server started successfully',
-      environment: ENVIRONMENT,
-    });
+      const shutdown = () => {
+        httpServer.close();
+        process.exit(0);
+      };
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
+    } else {
+      await startStdio();
+    }
   } catch (error) {
     logger.fatal({
       msg: 'Failed to start server',

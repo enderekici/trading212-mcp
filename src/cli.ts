@@ -24,28 +24,29 @@ OPTIONS:
   -v, --version              Show version information
   -k, --api-key <key>        Trading 212 API key
   -e, --environment <env>    Environment: "demo" or "live" (default: "demo")
+      --http                 Start as HTTP server (Streamable HTTP transport)
+  -p, --port <port>          HTTP server port (default: 3012)
+      --host <host>          HTTP server host (default: 0.0.0.0)
 
 ENVIRONMENT VARIABLES:
   TRADING212_API_KEY         Trading 212 API key (required)
   TRADING212_ENVIRONMENT     Environment: "demo" or "live" (default: "demo")
+  TRADING212_TRANSPORT       Transport: "stdio" or "http" (default: "stdio")
+  TRADING212_MCP_PORT        HTTP server port (default: 3012)
+  TRADING212_MCP_HOST        HTTP server host (default: 0.0.0.0)
 
 EXAMPLES:
-  # Using environment variables (recommended)
+  # Stdio transport (for Claude Desktop command-based config)
   export TRADING212_API_KEY="your_api_key_here"
-  export TRADING212_ENVIRONMENT="demo"
   trading212-mcp
 
-  # Using command-line arguments
-  trading212-mcp --api-key your_api_key --environment demo
-
-GETTING STARTED:
-  1. Get your API key from https://www.trading212.com/
-  2. Set the TRADING212_API_KEY environment variable
-  3. Run: trading212-mcp
-  4. Configure Claude Desktop to use this MCP server
+  # HTTP transport (for URL-based config)
+  trading212-mcp --http --port 3001
+  # Then configure: { "url": "http://localhost:3012/mcp" }
 
 CLAUDE DESKTOP CONFIGURATION:
-  Add to ~/.claude/mcp_config.json:
+
+  Option 1 — Stdio (command-based):
   {
     "mcpServers": {
       "trading212": {
@@ -54,6 +55,15 @@ CLAUDE DESKTOP CONFIGURATION:
           "TRADING212_API_KEY": "your_api_key",
           "TRADING212_ENVIRONMENT": "demo"
         }
+      }
+    }
+  }
+
+  Option 2 — HTTP (URL-based, start server first):
+  {
+    "mcpServers": {
+      "trading212": {
+        "url": "http://localhost:3012/mcp"
       }
     }
   }
@@ -75,6 +85,9 @@ function showVersion() {
 // Parse arguments
 let apiKey = process.env.TRADING212_API_KEY;
 let environment = process.env.TRADING212_ENVIRONMENT || 'demo';
+let useHttp = process.env.TRADING212_TRANSPORT === 'http';
+let port = process.env.TRADING212_MCP_PORT || '3012';
+let host = process.env.TRADING212_MCP_HOST || '0.0.0.0';
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -100,6 +113,18 @@ for (let i = 0; i < args.length; i++) {
       process.exit(1);
     }
   }
+
+  if (arg === '--http') {
+    useHttp = true;
+  }
+
+  if (arg === '-p' || arg === '--port') {
+    port = args[++i];
+  }
+
+  if (arg === '--host') {
+    host = args[++i];
+  }
 }
 
 // Validate configuration
@@ -121,6 +146,13 @@ const env = {
   ...process.env,
   TRADING212_API_KEY: apiKey,
   TRADING212_ENVIRONMENT: environment,
+  ...(useHttp
+    ? {
+        TRADING212_TRANSPORT: 'http',
+        TRADING212_MCP_PORT: port,
+        TRADING212_MCP_HOST: host,
+      }
+    : {}),
 };
 
 // Determine the path to index.js

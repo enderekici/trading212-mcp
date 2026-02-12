@@ -158,68 +158,20 @@ NODE_ENV=development
 - `development` - Pretty-printed colored logs (human-readable)
 - `production` - JSON logs (for structured logging systems)
 
-## Usage with Claude Desktop
+## MCP Integration
 
-### Setup Options
+This server works with any MCP-compatible client. It supports two transports:
 
-There are three ways to use the MCP server with Claude Desktop:
+| Transport | Use when | Start command |
+|-----------|----------|---------------|
+| **stdio** | Client spawns the process | `trading212-mcp` or `node dist/index.js` |
+| **Streamable HTTP** | Server runs separately | `trading212-mcp --http` (serves at `http://localhost:3012/mcp`) |
 
-#### Option 1: Docker (Recommended)
+### Claude Desktop
 
-Run the MCP server in a Docker container for isolation and consistency.
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
-**Step 1:** Pull or build the Docker image
-
-```bash
-# Option A: Pull pre-built image (when available)
-docker pull ghcr.io/enderekici/trading212-mcp:latest
-
-# Option B: Build locally
-git clone https://github.com/enderekici/trading212-mcp.git
-cd trading212-mcp
-docker build -t trading212-mcp:latest .
-```
-
-**Step 2:** Configure Claude Desktop
-
-Edit your Claude Desktop configuration file:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "trading212": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "--name", "trading212-mcp-claude",
-        "-e", "TRADING212_API_KEY=your_api_key_here",
-        "-e", "TRADING212_ENVIRONMENT=demo",
-        "trading212-mcp:latest"
-      ]
-    }
-  }
-}
-```
-
-**Step 3:** Restart Claude Desktop
-
----
-
-#### Option 2: Global npm Installation
-
-Install the MCP server globally and run it directly.
-
-**Step 1:** Install globally
-
-```bash
-npm install -g trading212-mcp
-```
-
-**Step 2:** Configure Claude Desktop
+**Stdio (recommended):**
 
 ```json
 {
@@ -235,31 +187,47 @@ npm install -g trading212-mcp
 }
 ```
 
-**Step 3:** Restart Claude Desktop
-
----
-
-#### Option 3: Local Build (Development)
-
-Build from source and reference the local installation.
-
-**Step 1:** Clone and build
-
-```bash
-git clone https://github.com/enderekici/trading212-mcp.git
-cd trading212-mcp
-npm install
-npm run build
-```
-
-**Step 2:** Configure Claude Desktop
+**HTTP (start server first with `trading212-mcp --http`):**
 
 ```json
 {
   "mcpServers": {
     "trading212": {
-      "command": "node",
-      "args": ["/absolute/path/to/trading212-mcp/dist/index.js"],
+      "url": "http://localhost:3012/mcp"
+    }
+  }
+}
+```
+
+**Docker (stdio):**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-e", "TRADING212_API_KEY=your_api_key_here",
+        "-e", "TRADING212_ENVIRONMENT=demo",
+        "trading212-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+### Claude Code
+
+Add to `.claude/settings.json` or run `claude mcp add`:
+
+**Stdio:**
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
       "env": {
         "TRADING212_API_KEY": "your_api_key_here",
         "TRADING212_ENVIRONMENT": "demo"
@@ -269,17 +237,120 @@ npm run build
 }
 ```
 
-**Step 3:** Restart Claude Desktop
+**HTTP (start server first):**
 
----
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "url": "http://localhost:3012/mcp"
+    }
+  }
+}
+```
 
-### Comparison
+### Cursor
+
+Add to Cursor's MCP settings (Settings > MCP Servers > Add):
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+### VS Code (Copilot)
+
+Add to `.vscode/mcp.json` in your workspace or user settings:
+
+```json
+{
+  "servers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+### Gemini CLI
+
+Add to `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "trading212": {
+      "command": "trading212-mcp",
+      "env": {
+        "TRADING212_API_KEY": "your_api_key_here",
+        "TRADING212_ENVIRONMENT": "demo"
+      }
+    }
+  }
+}
+```
+
+### Any MCP-Compatible Client
+
+For **stdio**, point your client at the `trading212-mcp` command (or `node dist/index.js`) with the required env vars. For **HTTP**, start the server first (`trading212-mcp --http --port 3012`) and point your client at `http://localhost:3012/mcp`.
+
+### Setup Methods Comparison
 
 | Method | Pros | Cons | Best For |
 |--------|------|------|----------|
-| **Docker** | Isolated, consistent, no Node.js needed | Slightly slower startup (~2s) | Production, teams |
-| **Global npm** | Fast, simple | Requires Node.js installed | Development |
-| **Local build** | Full control, fastest for dev | Manual updates | Contributors |
+| **Global npm** | Fast, simple | Requires Node.js installed | Most users |
+| **Docker (stdio)** | Isolated, consistent | Slightly slower startup (~2s) | Production, teams |
+| **HTTP transport** | Decoupled, shareable | Must start server separately | Remote, multi-client |
+| **Local build** | Full control | Manual updates | Contributors |
 
 See [DOCKER.md](./DOCKER.md) for advanced Docker deployment options including persistent containers.
 
