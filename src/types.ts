@@ -225,8 +225,8 @@ export const PieSchema = z
     instruments: z.array(PieInstrumentSchema).optional(),
     instrumentShares: z.record(z.string(), z.number()).optional(),
     publicUrl: z.string().optional(),
-    progress: z.number().optional(),
-    status: z.string().optional(),
+    progress: z.number().nullable().optional(),
+    status: z.string().nullable().optional(),
     result: z.union([z.number(), z.object({}).passthrough()]).optional(),
     dividendDetails: z.object({}).passthrough().optional(),
   })
