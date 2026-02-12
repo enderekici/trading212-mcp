@@ -1,8 +1,10 @@
 # Trading 212 MCP Server
 
+[![CI](https://github.com/enderekici/trading212-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/enderekici/trading212-mcp/actions/workflows/ci.yml)
 ![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D24-green?logo=node.js)
 ![TypeScript](https://img.shields.io/badge/typescript-5.9-blue?logo=typescript)
+![MCP](https://img.shields.io/badge/MCP-compatible-purple?logo=anthropic)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A comprehensive Model Context Protocol (MCP) server for seamless integration with the Trading 212 API. This server enables AI assistants like Claude to interact with your Trading 212 investment account, providing full access to account management, portfolio tracking, order execution, and historical data analysis.
