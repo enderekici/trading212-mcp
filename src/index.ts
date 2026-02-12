@@ -726,8 +726,8 @@ function registerHandlers(target: Server): void {
               (i) =>
                 i.ticker.toLowerCase().includes(searchLower) ||
                 i.name.toLowerCase().includes(searchLower) ||
-                i.shortName.toLowerCase().includes(searchLower) ||
-                i.isin.toLowerCase().includes(searchLower),
+                i.shortName?.toLowerCase().includes(searchLower) ||
+                i.isin?.toLowerCase().includes(searchLower),
             );
           }
 

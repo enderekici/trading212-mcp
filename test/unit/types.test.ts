@@ -78,13 +78,14 @@ describe('Account Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject missing required fields', () => {
-      const invalidData = {
-        free: 1000.5,
-        // missing total
+    it('should accept new API format with availableToTrade', () => {
+      const validData = {
+        availableToTrade: 1000.5,
+        inPies: 50,
+        reservedForOrders: 0,
       };
-      const result = AccountCashSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
+      const result = AccountCashSchema.safeParse(validData);
+      expect(result.success).toBe(true);
     });
   });
 
@@ -103,18 +104,16 @@ describe('Account Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid nested cash object', () => {
-      const invalidData = {
-        cash: {
-          free: 1000.5,
-          // missing total
-        },
-        invested: 3500.0,
-        ppl: 500.25,
-        pieCash: 100.0,
+    it('should accept new API format with investments object', () => {
+      const newFormatData = {
+        id: 12345,
+        currency: 'GBP',
+        cash: { availableToTrade: 1000.5, inPies: 50, reservedForOrders: 0 },
+        investments: { currentValue: 3500, totalCost: 3000, unrealizedProfitLoss: 500 },
+        totalValue: 4500.5,
       };
-      const result = AccountSummarySchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
+      const result = AccountSummarySchema.safeParse(newFormatData);
+      expect(result.success).toBe(true);
     });
   });
 });
@@ -154,35 +153,14 @@ describe('Instrument Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid instrument type', () => {
-      const invalidData = {
-        addedOn: '2024-01-01T00:00:00Z',
-        currencyCode: 'USD',
-        isin: 'US0378331005',
-        minTradeQuantity: 1,
-        name: 'Apple Inc.',
-        shortName: 'AAPL',
-        ticker: 'AAPL',
-        type: 'CRYPTO', // invalid type
-        workingScheduleId: 1,
-      };
-      const result = InstrumentSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it('should accept STOCK, ETF, and FUND types', () => {
-      const types = ['STOCK', 'ETF', 'FUND'];
+    it('should accept all instrument types including new API types', () => {
+      const types = ['STOCK', 'ETF', 'FUND', 'CRYPTOCURRENCY', 'FOREX', 'FUTURES', 'INDEX', 'WARRANT'];
       types.forEach((type) => {
         const validData = {
-          addedOn: '2024-01-01T00:00:00Z',
-          currencyCode: 'USD',
-          isin: 'US0378331005',
-          minTradeQuantity: 1,
-          name: 'Test Instrument',
-          shortName: 'TEST',
           ticker: 'TEST',
+          name: 'Test Instrument',
           type,
-          workingScheduleId: 1,
+          currencyCode: 'USD',
         };
         const result = InstrumentSchema.safeParse(validData);
         expect(result.success).toBe(true);
@@ -238,6 +216,38 @@ describe('Position Schema', () => {
       ppl: 52.5,
       quantity: 10,
       ticker: 'AAPL',
+    };
+    const result = PositionSchema.safeParse(validData);
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept null maxSell values', () => {
+    const validData = {
+      currentPrice: 155.5,
+      quantity: 10,
+      ticker: 'AAPL',
+      maxSell: null,
+    };
+    const result = PositionSchema.safeParse(validData);
+    expect(result.success).toBe(true);
+  });
+
+  it('should validate new API position format', () => {
+    const validData = {
+      instrument: { ticker: 'AAPL', name: 'Apple Inc.', currency: 'USD' },
+      quantity: 10,
+      averagePricePaid: 150.25,
+      currentPrice: 155.5,
+      createdAt: '2024-01-01T00:00:00Z',
+      quantityAvailableForTrading: 10,
+      quantityInPies: 0,
+      walletImpact: {
+        currency: 'GBP',
+        totalCost: 1200,
+        currentValue: 1250,
+        unrealizedProfitLoss: 50,
+        fxImpact: -5,
+      },
     };
     const result = PositionSchema.safeParse(validData);
     expect(result.success).toBe(true);
@@ -310,6 +320,22 @@ describe('Order Schemas', () => {
         ticker: 'AAPL',
         timeValidity: 'DAY',
         type: 'MARKET',
+      };
+      const result = OrderSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate new API order format', () => {
+      const validData = {
+        id: 123456,
+        instrument: { ticker: 'AAPL', name: 'Apple Inc.', currency: 'USD' },
+        side: 'BUY',
+        type: 'MARKET',
+        status: 'FILLED',
+        createdAt: '2024-01-01T00:00:00Z',
+        currency: 'GBP',
+        strategy: 'QUANTITY',
+        timeInForce: 'DAY',
       };
       const result = OrderSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -539,7 +565,7 @@ describe('Pie Schemas', () => {
 
 describe('Historical Data Schemas', () => {
   describe('HistoricalOrderSchema', () => {
-    it('should validate valid historical order', () => {
+    it('should validate legacy historical order format', () => {
       const validData = {
         dateCreated: '2024-01-01T00:00:00Z',
         fillCost: 5.0,
@@ -559,6 +585,28 @@ describe('Historical Data Schemas', () => {
         ticker: 'AAPL',
         timeValidity: 'DAY',
         type: 'MARKET',
+      };
+      const result = HistoricalOrderSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate new API nested historical order format', () => {
+      const validData = {
+        order: {
+          id: 123,
+          ticker: 'AAPL',
+          side: 'BUY',
+          type: 'MARKET',
+          status: 'FILLED',
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+        fill: {
+          id: 456,
+          filledAt: '2024-01-01T00:00:01Z',
+          quantity: 10,
+          price: 150.0,
+          type: 'TRADE',
+        },
       };
       const result = HistoricalOrderSchema.safeParse(validData);
       expect(result.success).toBe(true);
