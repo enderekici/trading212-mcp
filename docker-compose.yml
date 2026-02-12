@@ -11,6 +11,7 @@ services:
     environment:
       - TRADING212_API_KEY=${TRADING212_API_KEY:?TRADING212_API_KEY environment variable is required}
       - TRADING212_ENVIRONMENT=${TRADING212_ENVIRONMENT:-demo}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       - NODE_ENV=production
 
     # Restart policy for production reliability
