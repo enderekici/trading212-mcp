@@ -72,7 +72,7 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.getAccountInfo();
+      const result = await client.getAccountSummary();
       expect(result).toEqual(mockResponse);
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
@@ -86,7 +86,7 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      await client.getAccountInfo();
+      await client.getAccountSummary();
 
       const fetchCall = (global.fetch as any).mock.calls[0];
       const headers = fetchCall[1].headers;
@@ -103,7 +103,7 @@ describe('Trading212Client', () => {
         text: async () => JSON.stringify({ message: errorMessage }),
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow(errorMessage);
+      await expect(client.getAccountSummary()).rejects.toThrow(errorMessage);
     });
 
     it('should handle API errors with errorMessage field', async () => {
@@ -115,7 +115,7 @@ describe('Trading212Client', () => {
         text: async () => JSON.stringify({ errorMessage }),
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow(errorMessage);
+      await expect(client.getAccountSummary()).rejects.toThrow(errorMessage);
     });
 
     it('should handle API errors with plain text', async () => {
@@ -127,7 +127,7 @@ describe('Trading212Client', () => {
         text: async () => errorText,
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow(errorText);
+      await expect(client.getAccountSummary()).rejects.toThrow(errorText);
     });
 
     it('should throw error with status code', async () => {
@@ -138,7 +138,7 @@ describe('Trading212Client', () => {
         text: async () => 'Not Found',
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow('Trading 212 API Error (404)');
+      await expect(client.getAccountSummary()).rejects.toThrow('Trading 212 API Error (404)');
     });
   });
 
@@ -159,8 +159,8 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      await client.getAccountInfo();
-      const rateLimitInfo = client.getRateLimitInfo('/equity/account/info');
+      await client.getAccountSummary();
+      const rateLimitInfo = client.getRateLimitInfo('/equity/account/summary');
 
       expect(rateLimitInfo).toEqual({
         limit: 10,
@@ -180,8 +180,8 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      await client.getAccountInfo();
-      const rateLimitInfo = client.getRateLimitInfo('/equity/account/info');
+      await client.getAccountSummary();
+      const rateLimitInfo = client.getRateLimitInfo('/equity/account/summary');
 
       expect(rateLimitInfo).toBeNull();
     });
@@ -193,36 +193,6 @@ describe('Trading212Client', () => {
   });
 
   describe('Account Management', () => {
-    it('should get account info', async () => {
-      const mockResponse = { currencyCode: 'USD', id: 12345 };
-
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        headers: new Map(),
-        json: async () => mockResponse,
-      });
-
-      const result = await client.getAccountInfo();
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should get account cash', async () => {
-      const mockResponse = {
-        free: 1000.5,
-        total: 5000.0,
-        ppl: 500.25,
-      };
-
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        headers: new Map(),
-        json: async () => mockResponse,
-      });
-
-      const result = await client.getAccountCash();
-      expect(result).toEqual(mockResponse);
-    });
-
     it('should get account summary', async () => {
       const mockResponse = {
         cash: { free: 1000.5, total: 5000.0 },
@@ -243,7 +213,7 @@ describe('Trading212Client', () => {
   });
 
   describe('Portfolio/Positions', () => {
-    it('should get portfolio', async () => {
+    it('should get all positions', async () => {
       const mockResponse = [
         {
           averagePrice: 150.25,
@@ -260,19 +230,21 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.getPortfolio();
+      const result = await client.getPositions();
       expect(result).toEqual(mockResponse);
       expect(result).toHaveLength(1);
     });
 
-    it('should get specific position', async () => {
-      const mockResponse = {
-        averagePrice: 150.25,
-        currentPrice: 155.5,
-        ppl: 52.5,
-        quantity: 10,
-        ticker: 'AAPL',
-      };
+    it('should get positions filtered by ticker', async () => {
+      const mockResponse = [
+        {
+          averagePrice: 150.25,
+          currentPrice: 155.5,
+          ppl: 52.5,
+          quantity: 10,
+          ticker: 'AAPL',
+        },
+      ];
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -280,9 +252,12 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      const result = await client.getPosition('AAPL');
+      const result = await client.getPositions('AAPL');
       expect(result).toEqual(mockResponse);
-      expect(result.ticker).toBe('AAPL');
+      expect(result[0].ticker).toBe('AAPL');
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('ticker=AAPL');
     });
   });
 
@@ -356,7 +331,6 @@ describe('Trading212Client', () => {
       const orderRequest = {
         quantity: 10,
         ticker: 'AAPL',
-        timeValidity: 'DAY' as const,
       };
 
       const mockResponse = {
@@ -391,7 +365,7 @@ describe('Trading212Client', () => {
         limitPrice: 150.0,
         quantity: 10,
         ticker: 'AAPL',
-        timeValidity: 'GTC' as const,
+        timeValidity: 'GOOD_TILL_CANCEL' as const,
       };
 
       const mockResponse = {
@@ -404,7 +378,7 @@ describe('Trading212Client', () => {
         side: 'BUY',
         status: 'NEW',
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
         type: 'LIMIT',
       };
 
@@ -458,7 +432,7 @@ describe('Trading212Client', () => {
         quantity: 10,
         stopPrice: 140.0,
         ticker: 'AAPL',
-        timeValidity: 'GTC' as const,
+        timeValidity: 'GOOD_TILL_CANCEL' as const,
       };
 
       const mockResponse = {
@@ -472,7 +446,7 @@ describe('Trading212Client', () => {
         status: 'NEW',
         stopPrice: 140.0,
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
         type: 'STOP_LIMIT',
       };
 
@@ -954,7 +928,7 @@ describe('Trading212Client', () => {
         text: async () => errorJson,
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow(errorJson);
+      await expect(client.getAccountSummary()).rejects.toThrow(errorJson);
     });
 
     it('should use errorMessage when message is not present', async () => {
@@ -965,7 +939,7 @@ describe('Trading212Client', () => {
         text: async () => JSON.stringify({ errorMessage: 'Forbidden access' }),
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow('Forbidden access');
+      await expect(client.getAccountSummary()).rejects.toThrow('Forbidden access');
     });
 
     it('should handle JSON with empty message field falling back to errorMessage', async () => {
@@ -976,7 +950,7 @@ describe('Trading212Client', () => {
         text: async () => JSON.stringify({ message: '', errorMessage: 'actual error' }),
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow('actual error');
+      await expect(client.getAccountSummary()).rejects.toThrow('actual error');
     });
 
     it('should handle JSON with null message falling back to errorText', async () => {
@@ -988,7 +962,7 @@ describe('Trading212Client', () => {
         text: async () => errorJson,
       });
 
-      await expect(client.getAccountInfo()).rejects.toThrow(errorJson);
+      await expect(client.getAccountSummary()).rejects.toThrow(errorJson);
     });
   });
 
@@ -1007,8 +981,8 @@ describe('Trading212Client', () => {
         json: async () => mockResponse,
       });
 
-      await client.getAccountInfo();
-      const rateLimitInfo = client.getRateLimitInfo('/equity/account/info');
+      await client.getAccountSummary();
+      const rateLimitInfo = client.getRateLimitInfo('/equity/account/summary');
       expect(rateLimitInfo).toBeNull();
     });
   });
@@ -1026,7 +1000,7 @@ describe('Trading212Client', () => {
         json: async () => ({ currencyCode: 'USD', id: 12345 }),
       });
 
-      await demoClient.getAccountInfo();
+      await demoClient.getAccountSummary();
 
       const fetchCall = (global.fetch as any).mock.calls[0];
       expect(fetchCall[0]).toContain('demo.trading212.com');
@@ -1044,7 +1018,7 @@ describe('Trading212Client', () => {
         json: async () => ({ currencyCode: 'USD', id: 12345 }),
       });
 
-      await liveClient.getAccountInfo();
+      await liveClient.getAccountSummary();
 
       const fetchCall = (global.fetch as any).mock.calls[0];
       expect(fetchCall[0]).toContain('live.trading212.com');

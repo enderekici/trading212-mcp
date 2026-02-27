@@ -144,7 +144,7 @@ export const PositionSchema = z
 export const OrderTypeSchema = z.enum(['MARKET', 'LIMIT', 'STOP', 'STOP_LIMIT']);
 export const OrderSideSchema = z.enum(['BUY', 'SELL']);
 export const OrderStatusSchema = z.string();
-export const TimeInForceSchema = z.enum(['DAY', 'GTC']);
+export const TimeInForceSchema = z.enum(['DAY', 'GOOD_TILL_CANCEL']);
 
 export const OrderSchema = z
   .object({
@@ -171,11 +171,11 @@ export const OrderSchema = z
   })
   .passthrough();
 
-// Market order request
+// Market order request (extendedHours defaults to false server-side)
 export const MarketOrderRequestSchema = z.object({
+  extendedHours: z.boolean().optional(),
   quantity: z.number().positive(),
   ticker: z.string(),
-  timeValidity: TimeInForceSchema.default('DAY'),
 });
 
 // Limit order request
@@ -186,21 +186,21 @@ export const LimitOrderRequestSchema = z.object({
   timeValidity: TimeInForceSchema.default('DAY'),
 });
 
-// Stop order request
+// Stop order request (default GOOD_TILL_CANCEL so stop-loss persists across trading sessions)
 export const StopOrderRequestSchema = z.object({
   quantity: z.number().positive(),
   stopPrice: z.number().positive(),
   ticker: z.string(),
-  timeValidity: TimeInForceSchema.default('DAY'),
+  timeValidity: TimeInForceSchema.default('GOOD_TILL_CANCEL'),
 });
 
-// Stop-limit order request
+// Stop-limit order request (default GOOD_TILL_CANCEL so stop-loss persists across trading sessions)
 export const StopLimitOrderRequestSchema = z.object({
   limitPrice: z.number().positive(),
   quantity: z.number().positive(),
   stopPrice: z.number().positive(),
   ticker: z.string(),
-  timeValidity: TimeInForceSchema.default('DAY'),
+  timeValidity: TimeInForceSchema.default('GOOD_TILL_CANCEL'),
 });
 
 // Pie schemas

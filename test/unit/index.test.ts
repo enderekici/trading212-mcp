@@ -49,15 +49,13 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => {
 
 // Mock the Trading212Client
 const mockClientInstance = {
-  getAccountInfo: vi.fn().mockResolvedValue({ currencyCode: 'USD', id: 12345 }),
-  getAccountCash: vi.fn().mockResolvedValue({ free: 1000.5, total: 5000.0 }),
   getAccountSummary: vi.fn().mockResolvedValue({
     cash: { free: 1000.5, total: 5000.0 },
     invested: 3500.0,
     ppl: 500.25,
     pieCash: 100.0,
   }),
-  getPortfolio: vi.fn().mockResolvedValue([
+  getPositions: vi.fn().mockResolvedValue([
     {
       averagePrice: 150.25,
       currentPrice: 155.5,
@@ -66,13 +64,6 @@ const mockClientInstance = {
       ticker: 'AAPL',
     },
   ]),
-  getPosition: vi.fn().mockResolvedValue({
-    averagePrice: 150.25,
-    currentPrice: 155.5,
-    ppl: 52.5,
-    quantity: 10,
-    ticker: 'AAPL',
-  }),
   getOrders: vi.fn().mockResolvedValue([]),
   getOrder: vi.fn().mockResolvedValue({
     createdOn: '2024-01-01T00:00:00Z',
@@ -240,15 +231,13 @@ describe('MCP Server Index', () => {
     vi.clearAllMocks();
 
     // Re-set default implementations that were cleared
-    mockClientInstance.getAccountInfo.mockResolvedValue({ currencyCode: 'USD', id: 12345 });
-    mockClientInstance.getAccountCash.mockResolvedValue({ free: 1000.5, total: 5000.0 });
     mockClientInstance.getAccountSummary.mockResolvedValue({
       cash: { free: 1000.5, total: 5000.0 },
       invested: 3500.0,
       ppl: 500.25,
       pieCash: 100.0,
     });
-    mockClientInstance.getPortfolio.mockResolvedValue([
+    mockClientInstance.getPositions.mockResolvedValue([
       {
         averagePrice: 150.25,
         currentPrice: 155.5,
@@ -257,13 +246,6 @@ describe('MCP Server Index', () => {
         ticker: 'AAPL',
       },
     ]);
-    mockClientInstance.getPosition.mockResolvedValue({
-      averagePrice: 150.25,
-      currentPrice: 155.5,
-      ppl: 52.5,
-      quantity: 10,
-      ticker: 'AAPL',
-    });
     mockClientInstance.getOrders.mockResolvedValue([]);
     mockClientInstance.getOrder.mockResolvedValue({
       createdOn: '2024-01-01T00:00:00Z',
@@ -458,8 +440,8 @@ describe('MCP Server Index', () => {
       });
       expect(result.content[0].type).toBe('text');
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.currencyCode).toBe('USD');
-      expect(parsed.id).toBe(12345);
+      expect(parsed.cash).toBeDefined();
+      expect(parsed.invested).toBe(3500.0);
     });
 
     it('should handle get_account_cash', async () => {
@@ -467,8 +449,8 @@ describe('MCP Server Index', () => {
         params: { name: 'get_account_cash', arguments: {} },
       });
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.free).toBe(1000.5);
-      expect(parsed.total).toBe(5000.0);
+      expect(parsed.cash).toBeDefined();
+      expect(parsed.invested).toBe(3500.0);
     });
 
     it('should handle get_account_summary', async () => {
@@ -489,6 +471,7 @@ describe('MCP Server Index', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(Array.isArray(parsed)).toBe(true);
       expect(parsed[0].ticker).toBe('AAPL');
+      expect(mockClientInstance.getPositions).toHaveBeenCalled();
     });
 
     it('should handle get_position', async () => {
@@ -496,8 +479,9 @@ describe('MCP Server Index', () => {
         params: { name: 'get_position', arguments: { ticker: 'AAPL' } },
       });
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.ticker).toBe('AAPL');
-      expect(mockClientInstance.getPosition).toHaveBeenCalledWith('AAPL');
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0].ticker).toBe('AAPL');
+      expect(mockClientInstance.getPositions).toHaveBeenCalledWith('AAPL');
     });
   });
 
@@ -787,9 +771,9 @@ describe('MCP Server Index', () => {
 
   describe('CallTool handler - Error handling', () => {
     it('should handle client errors', async () => {
-      mockClientInstance.getAccountInfo.mockRejectedValueOnce(new Error('Network error'));
+      mockClientInstance.getAccountSummary.mockRejectedValueOnce(new Error('Network error'));
       const result = await callToolHandler?.({
-        params: { name: 'get_account_info', arguments: {} },
+        params: { name: 'get_account_summary', arguments: {} },
       });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Error: Network error');
@@ -807,9 +791,9 @@ describe('MCP Server Index', () => {
     });
 
     it('should handle non-Error thrown values', async () => {
-      mockClientInstance.getAccountInfo.mockRejectedValueOnce('string error');
+      mockClientInstance.getAccountSummary.mockRejectedValueOnce('string error');
       const result = await callToolHandler?.({
-        params: { name: 'get_account_info', arguments: {} },
+        params: { name: 'get_account_summary', arguments: {} },
       });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Error: string error');

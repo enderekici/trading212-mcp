@@ -1,9 +1,5 @@
 import { z } from 'zod';
 import {
-  type AccountCash,
-  AccountCashSchema,
-  type AccountInfo,
-  AccountInfoSchema,
   type AccountSummary,
   AccountSummarySchema,
   type CreatePieRequest,
@@ -143,25 +139,14 @@ export class Trading212Client {
   }
 
   // Account Management
-  async getAccountInfo(): Promise<AccountInfo> {
-    return this.request('/equity/account/info', {}, AccountInfoSchema);
-  }
-
-  async getAccountCash(): Promise<AccountCash> {
-    return this.request('/equity/account/cash', {}, AccountCashSchema);
-  }
-
   async getAccountSummary(): Promise<AccountSummary> {
     return this.request('/equity/account/summary', {}, AccountSummarySchema);
   }
 
-  // Portfolio/Positions
-  async getPortfolio(): Promise<Position[]> {
-    return this.request('/equity/portfolio', {}, z.array(PositionSchema));
-  }
-
-  async getPosition(ticker: string): Promise<Position> {
-    return this.request(`/equity/portfolio/${ticker}`, {}, PositionSchema);
+  // Positions
+  async getPositions(ticker?: string): Promise<Position[]> {
+    const qs = ticker ? `?ticker=${encodeURIComponent(ticker)}` : '';
+    return this.request(`/equity/positions${qs}`, {}, z.array(PositionSchema));
   }
 
   // Order Management
@@ -299,7 +284,7 @@ export class Trading212Client {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.ticker) queryParams.append('ticker', params.ticker);
 
-    const endpoint = `/history/dividends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/equity/history/dividends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ items: unknown[]; nextPagePath?: string }>(endpoint);
 
     return {
@@ -316,7 +301,7 @@ export class Trading212Client {
     if (params?.cursor) queryParams.append('cursor', params.cursor.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
-    const endpoint = `/history/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/equity/history/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ items: unknown[]; nextPagePath?: string }>(endpoint);
 
     return {
@@ -326,7 +311,7 @@ export class Trading212Client {
   }
 
   async requestExport(exportRequest: ExportRequest): Promise<{ reportId: number }> {
-    return this.request('/history/exports', {
+    return this.request('/equity/history/exports', {
       method: 'POST',
       body: JSON.stringify(exportRequest),
     });

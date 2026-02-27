@@ -310,9 +310,9 @@ describe('Order Schemas', () => {
   });
 
   describe('TimeInForceSchema', () => {
-    it('should accept DAY and GTC', () => {
+    it('should accept DAY and GOOD_TILL_CANCEL', () => {
       expect(TimeInForceSchema.safeParse('DAY').success).toBe(true);
-      expect(TimeInForceSchema.safeParse('GTC').success).toBe(true);
+      expect(TimeInForceSchema.safeParse('GOOD_TILL_CANCEL').success).toBe(true);
     });
   });
 
@@ -356,21 +356,21 @@ describe('Order Schemas', () => {
       const validData = {
         quantity: 10,
         ticker: 'AAPL',
-        timeValidity: 'DAY',
       };
       const result = MarketOrderRequestSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
-    it('should use default timeValidity', () => {
+    it('should accept optional extendedHours', () => {
       const validData = {
         quantity: 10,
         ticker: 'AAPL',
+        extendedHours: true,
       };
       const result = MarketOrderRequestSchema.safeParse(validData);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.timeValidity).toBe('DAY');
+        expect(result.data.extendedHours).toBe(true);
       }
     });
 
@@ -378,7 +378,6 @@ describe('Order Schemas', () => {
       const invalidData = {
         quantity: -10,
         ticker: 'AAPL',
-        timeValidity: 'DAY',
       };
       const result = MarketOrderRequestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -388,7 +387,6 @@ describe('Order Schemas', () => {
       const invalidData = {
         quantity: 0,
         ticker: 'AAPL',
-        timeValidity: 'DAY',
       };
       const result = MarketOrderRequestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -401,7 +399,7 @@ describe('Order Schemas', () => {
         limitPrice: 150.0,
         quantity: 10,
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
       };
       const result = LimitOrderRequestSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -412,7 +410,7 @@ describe('Order Schemas', () => {
         limitPrice: -150.0,
         quantity: 10,
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
       };
       const result = LimitOrderRequestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -450,7 +448,7 @@ describe('Order Schemas', () => {
         quantity: 10,
         stopPrice: 140.0,
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
       };
       const result = StopLimitOrderRequestSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -461,7 +459,7 @@ describe('Order Schemas', () => {
         quantity: 10,
         stopPrice: 140.0,
         ticker: 'AAPL',
-        timeValidity: 'GTC',
+        timeValidity: 'GOOD_TILL_CANCEL',
       };
       const result = StopLimitOrderRequestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);

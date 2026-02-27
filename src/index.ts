@@ -164,11 +164,10 @@ const tools: Tool[] = [
           type: 'number',
           description: 'The quantity to buy (positive) or sell (negative)',
         },
-        timeValidity: {
-          type: 'string',
-          enum: ['DAY', 'GTC'],
-          description: 'Time validity of the order (DAY or GTC - Good Till Cancelled)',
-          default: 'DAY',
+        extendedHours: {
+          type: 'boolean',
+          description: 'Allow execution outside regular trading hours (defaults to false)',
+          default: false,
         },
       },
       required: ['ticker', 'quantity'],
@@ -194,7 +193,7 @@ const tools: Tool[] = [
         },
         timeValidity: {
           type: 'string',
-          enum: ['DAY', 'GTC'],
+          enum: ['DAY', 'GOOD_TILL_CANCEL'],
           description: 'Time validity of the order',
           default: 'DAY',
         },
@@ -222,7 +221,7 @@ const tools: Tool[] = [
         },
         timeValidity: {
           type: 'string',
-          enum: ['DAY', 'GTC'],
+          enum: ['DAY', 'GOOD_TILL_CANCEL'],
           description: 'Time validity of the order',
           default: 'DAY',
         },
@@ -255,7 +254,7 @@ const tools: Tool[] = [
         },
         timeValidity: {
           type: 'string',
-          enum: ['DAY', 'GTC'],
+          enum: ['DAY', 'GOOD_TILL_CANCEL'],
           description: 'Time validity of the order',
           default: 'DAY',
         },
@@ -562,30 +561,8 @@ function registerHandlers(target: Server): void {
     try {
       switch (name) {
         // Account Management
-        case 'get_account_info': {
-          const info = await client.getAccountInfo();
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(info, null, 2),
-              },
-            ],
-          };
-        }
-
-        case 'get_account_cash': {
-          const cash = await client.getAccountCash();
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(cash, null, 2),
-              },
-            ],
-          };
-        }
-
+        case 'get_account_info':
+        case 'get_account_cash':
         case 'get_account_summary': {
           const summary = await client.getAccountSummary();
           return {
@@ -598,9 +575,9 @@ function registerHandlers(target: Server): void {
           };
         }
 
-        // Portfolio/Positions
+        // Positions
         case 'get_portfolio': {
-          const portfolio = await client.getPortfolio();
+          const portfolio = await client.getPositions();
           return {
             content: [
               {
@@ -613,12 +590,12 @@ function registerHandlers(target: Server): void {
 
         case 'get_position': {
           const { ticker } = TickerInputSchema.parse(args);
-          const position = await client.getPosition(ticker);
+          const positions = await client.getPositions(ticker);
           return {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(position, null, 2),
+                text: JSON.stringify(positions, null, 2),
               },
             ],
           };
